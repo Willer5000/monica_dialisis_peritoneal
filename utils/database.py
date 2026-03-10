@@ -1,26 +1,24 @@
 import os
 from supabase import create_client, Client
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configuración de zona horaria Buenos Aires
 BAIRES_TZ = pytz.timezone('America/Argentina/Buenos_Aires')
 
 class Database:
     def __init__(self):
         self.url = os.getenv("SUPABASE_URL", "https://dhroamdwktzvurhgiwgi.supabase.co")
-        self.key = os.getenv("SUPABASE_KEY", "sb_publishable_hUDOyddHWnA4by2njU9pOg_dOzD59fM")
+        self.key = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRocm9hbWR3a3R6dnVyaGdpd2dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDYwMTEsImV4cCI6MjA4ODcyMjAxMX0.Nzh55cT8EwETHDeJSt3D1CSGplVyO75XuqhyTPQ3-Ig")
         self.supabase: Client = create_client(self.url, self.key)
     
     def get_configuracion(self):
-        """Obtener configuración del paciente con edad calculada"""
+        """Obtener configuración del paciente"""
         response = self.supabase.table('configuracion').select('*').order('id', desc=True).limit(1).execute()
         if response.data:
             config = response.data[0]
-            # Calcular edad desde Python
             from datetime import date
             nacimiento = datetime.strptime(config['fecha_nacimiento'], '%Y-%m-%d').date()
             hoy = date.today()
@@ -46,210 +44,112 @@ class Database:
         return response.data
     
     def get_ultimo_registro(self):
-        """Obtener el último registro con análisis de tendencia"""
-        response = self.supabase.table('registros')\
-            .select('*')\
-            .order('fecha', desc=True)\
-            .order('hora', desc=True)\
-            .limit(5)\
-            .execute()
-        
-        if not response.data:
-            return None
-        
-        registros = response.data
-        ultimo = registros[0]
-        
-        # Calcular UF a mostrar según tipo
-        if ultimo['tipo_dialisis'] == 'Manual':
-            ultimo['uf_mostrar'] = float(ultimo['uf_recambio_manual_ml'] or 0)
-        else:
-            ultimo['uf_mostrar'] = float(ultimo['uf_total_cicladora_ml'] or 0)
-        
-        # Calcular tendencia (comparar con promedio de últimos 3)
-        if len(registros) >= 2:
-            ufs_anteriores = []
-            for r in registros[1:4]:  # Hasta 3 anteriores
-                if r['tipo_dialisis'] == 'Manual':
-                    ufs_anteriores.append(float(r['uf_recambio_manual_ml'] or 0))
-                else:
-                    ufs_anteriores.append(float(r['uf_total_cicladora_ml'] or 0))
-            
-            if ufs_anteriores:
-                promedio_anterior = sum(ufs_anteriores) / len(ufs_anteriores)
-                ultimo['tendencia'] = ultimo['uf_mostrar'] - promedio_anterior
-                ultimo['tendencia_porcentaje'] = (ultimo['tendencia'] / promedio_anterior * 100) if promedio_anterior != 0 else 0
-        else:
-            ultimo['tendencia'] = 0
-            ultimo['tendencia_porcentaje'] = 0
-        
-        return ultimo
+        """Obtener el último registro (cualquier tipo)"""
+        response = self.supabase.table('ultimo_registro').select('*').execute()
+        return response.data[0] if response.data else None
     
-    def get_ultima_infusion_manual(self):
-        """Obtener la última infusión manual registrada"""
-        response = self.supabase.table('registros')\
+    def get_ultimo_registro_manual(self):
+        """Obtener el último registro manual (para calcular balance)"""
+        response = self.supabase.table('registros_manual')\
             .select('*')\
-            .eq('tipo_dialisis', 'Manual')\
             .order('fecha', desc=True)\
             .order('hora', desc=True)\
             .limit(1)\
             .execute()
-        return response.data[0] if response.data else None    
+        return response.data[0] if response.data else None
     
-    
-    def insert_registro(self, datos):
-        """Insertar un nuevo registro con cálculo correcto de UF Manual"""
-        # Asegurar zona horaria Buenos Aires
+    def insert_registro_manual(self, datos):
+        """Insertar registro manual con cálculo de balance"""
         ahora = datetime.now(BAIRES_TZ)
+        
+        # Obtener último registro manual para calcular balance
+        ultimo = self.get_ultimo_registro_manual()
+        
+        # Calcular balance: Drenaje actual - Infusión anterior
+        if ultimo:
+            # Usar volumen infundido del último registro como referencia
+            volumen_infusion_anterior = ultimo.get('volumen_infundido_ml', 0)
+            balance = (datos['peso_drenaje'] * 1000) - volumen_infusion_anterior
+        else:
+            # Primer registro del día, balance = 0
+            balance = 0
         
         registro = {
             'fecha': datos.get('fecha', ahora.date().isoformat()),
             'hora': datos.get('hora', ahora.time().strftime('%H:%M:%S')),
-            'tipo_dialisis': datos['tipo'],
+            'concentracion': datos['concentracion'],
+            'peso_bolsa_llena_kg': datos['peso_llena'],
+            'peso_bolsa_vacia_kg': datos.get('peso_vacia', 0),
+            'peso_bolsa_drenaje_kg': datos['peso_drenaje'],
+            'balance_ml': balance,
             'observaciones': datos.get('observaciones', '')
         }
         
-        if datos['tipo'] == 'Manual':
-            peso_sol = float(datos['peso_solucion'])
-            peso_dren = float(datos['peso_drenaje'])
-            
-            # Buscar la última infusión manual para calcular UF correctamente
-            # UF Manual = Drenaje Actual - Infusión Anterior
-            ultima_infusion = self.get_ultima_infusion_manual()
-            
-            if ultima_infusion and ultima_infusion.get('peso_bolsa_solucion_kg'):
-                # Si hay infusión anterior, calcular UF con esa
-                uf_manual = (peso_dren - float(ultima_infusion['peso_bolsa_solucion_kg'])) * 1000
-            else:
-                # Si no hay infusión anterior, usar la solución actual (primer registro del día)
-                uf_manual = (peso_dren - peso_sol) * 1000
-            
-            registro.update({
-                'color_bolsa': datos['color_bolsa'],
-                'peso_bolsa_solucion_kg': peso_sol,
-                'peso_bolsa_drenaje_kg': peso_dren,
-                'uf_recambio_manual_ml': uf_manual
-            })
-        else:
-            registro.update({
-                'uf_total_cicladora_ml': int(datos.get('uf_cicladora', 0))
-            })
-        
-        response = self.supabase.table('registros').insert(registro).execute()
-        
-        # Actualizar totales del día
-        self.actualizar_totales_diarios(registro['fecha'])
-        
+        response = self.supabase.table('registros_manual').insert(registro).execute()
         return response.data
     
-    def actualizar_totales_diarios(self, fecha):
-        """Recalcular UF total y número de recambios para una fecha"""
-        response = self.supabase.table('registros')\
-            .select('*')\
-            .eq('fecha', fecha)\
-            .execute()
+    def insert_registro_cicladora(self, datos):
+        """Insertar registro de cicladora"""
+        ahora = datetime.now(BAIRES_TZ)
         
-        if not response.data:
-            return
+        registro = {
+            'fecha': datos.get('fecha', ahora.date().isoformat()),
+            'hora_inicio': datos.get('hora_inicio', ahora.time().strftime('%H:%M:%S')),
+            'hora_fin': datos.get('hora_fin', (ahora + timedelta(hours=8)).time().strftime('%H:%M:%S')),
+            'volumen_drenaje_inicial_ml': datos.get('drenaje_inicial'),
+            'ultrafiltracion_total_ml': datos.get('uf_total'),
+            'tiempo_permanencia_promedio_min': datos.get('tiempo_permanencia'),
+            'tiempo_perdido_min': datos.get('tiempo_perdido'),
+            'volumen_total_solucion_ml': datos.get('volumen_solucion'),
+            'numero_ciclos_completados': datos.get('num_ciclos'),
+            'observaciones': datos.get('observaciones', '')
+        }
         
-        registros = response.data
-        total_uf = 0
-        num_manuales = 0
-        
-        for reg in registros:
-            if reg['tipo_dialisis'] == 'Cicladora':
-                total_uf += reg.get('uf_total_cicladora_ml', 0)
-            else:
-                total_uf += reg.get('uf_recambio_manual_ml', 0)
-                num_manuales += 1
-        
-        # Actualizar todos los registros del día
-        for reg in registros:
-            self.supabase.table('registros')\
-                .update({
-                    'uf_total_dia_ml': total_uf,
-                    'num_recambios_manuales_dia': num_manuales
-                })\
-                .eq('id', reg['id'])\
-                .execute()
+        response = self.supabase.table('registros_cicladora').insert(registro).execute()
+        return response.data
     
-    def get_registros_fecha(self, fecha_inicio, fecha_fin):
-        """Obtener registros en un rango de fechas"""
-        response = self.supabase.table('registros')\
+    def get_registros_manual(self, fecha_inicio, fecha_fin):
+        """Obtener registros manuales en rango de fechas"""
+        response = self.supabase.table('registros_manual')\
             .select('*')\
             .gte('fecha', fecha_inicio)\
             .lte('fecha', fecha_fin)\
-            .order('fecha', desc=True)\
-            .order('hora', desc=True)\
+            .order('fecha')\
+            .order('hora')\
             .execute()
         return response.data
     
-    def get_estadisticas_periodo(self, fecha_inicio, fecha_fin):
-        """Obtener estadísticas para el informe"""
-        response = self.supabase.table('registros')\
+    def get_registros_cicladora(self, fecha_inicio, fecha_fin):
+        """Obtener registros de cicladora en rango de fechas"""
+        response = self.supabase.table('registros_cicladora')\
             .select('*')\
             .gte('fecha', fecha_inicio)\
             .lte('fecha', fecha_fin)\
             .order('fecha')\
             .execute()
+        return response.data
+    
+    def get_estadisticas_periodo(self, fecha_inicio, fecha_fin):
+        """Calcular estadísticas completas para el período"""
+        manuales = self.get_registros_manual(fecha_inicio, fecha_fin)
+        cicladoras = self.get_registros_cicladora(fecha_inicio, fecha_fin)
         
-        registros = response.data
-        if not registros:
-            return None
+        # Análisis de manuales
+        balances_manual = [r['balance_ml'] for r in manuales if r['balance_ml']]
         
-        # Agrupar por fecha
-        dias = {}
-        uf_por_dia = []
-        
-        for reg in registros:
-            fecha = reg['fecha']
-            if fecha not in dias:
-                dias[fecha] = {
-                    'uf_cicladora': 0,
-                    'uf_manual': 0,
-                    'num_manuales': 0,
-                    'total_uf': 0
-                }
-            
-            if reg['tipo_dialisis'] == 'Cicladora':
-                dias[fecha]['uf_cicladora'] += reg.get('uf_total_cicladora_ml', 0)
-            else:
-                dias[fecha]['uf_manual'] += reg.get('uf_recambio_manual_ml', 0)
-                dias[fecha]['num_manuales'] += 1
-        
-        # Calcular totales por día
-        for fecha, datos in dias.items():
-            datos['total_uf'] = datos['uf_cicladora'] + datos['uf_manual']
-            uf_por_dia.append(datos['total_uf'])
-        
-        # Calcular estadísticas
-        uf_cicladora_total = sum(d['uf_cicladora'] for d in dias.values())
-        uf_manual_total = sum(d['uf_manual'] for d in dias.values())
-        total_uf_periodo = sum(uf_por_dia)
-        
-        # Análisis de tendencia
-        uf_ordenadas = uf_por_dia
-        tendencia = "estable"
-        if len(uf_ordenadas) >= 3:
-            if uf_ordenadas[-1] > uf_ordenadas[-2] > uf_ordenadas[-3]:
-                tendencia = "creciente"
-            elif uf_ordenadas[-1] < uf_ordenadas[-2] < uf_ordenadas[-3]:
-                tendencia = "decreciente"
+        # Análisis de cicladoras
+        ufs_cicladora = [r['ultrafiltracion_total_ml'] for r in cicladoras if r['ultrafiltracion_total_ml']]
+        eficiencias = [r['eficiencia_ml_por_hora'] for r in cicladoras if r['eficiencia_ml_por_hora']]
         
         return {
-            'total_dias': len(dias),
-            'total_registros': len(registros),
-            'total_recambios_manuales': sum(d['num_manuales'] for d in dias.values()),
-            'uf_total_periodo': total_uf_periodo,
-            'uf_promedio_dia': total_uf_periodo / len(dias) if dias else 0,
-            'uf_cicladora_total': uf_cicladora_total,
-            'uf_manual_total': uf_manual_total,
-            'dias_con_uf_negativa': sum(1 for uf in uf_por_dia if uf < 0),
-            'dias_con_uf_positiva': sum(1 for uf in uf_por_dia if uf > 0),
-            'uf_max': max(uf_por_dia) if uf_por_dia else 0,
-            'uf_min': min(uf_por_dia) if uf_por_dia else 0,
-            'tendencia': tendencia,
-            'dias': dias,
-            'uf_por_dia': uf_por_dia,
-            'fechas': list(dias.keys())
+            'total_manuales': len(manuales),
+            'total_cicladoras': len(cicladoras),
+            'balances_manual': balances_manual,
+            'ufs_cicladora': ufs_cicladora,
+            'eficiencias': eficiencias,
+            'promedio_balance_manual': sum(balances_manual) / len(balances_manual) if balances_manual else 0,
+            'promedio_uf_cicladora': sum(ufs_cicladora) / len(ufs_cicladora) if ufs_cicladora else 0,
+            'total_uf_periodo': sum(ufs_cicladora) + sum(balances_manual),
+            'dias_con_balance_negativo': sum(1 for b in balances_manual if b < 0),
+            'dias_con_uf_negativa': sum(1 for u in ufs_cicladora if u < 0),
         }

@@ -196,6 +196,9 @@ with col3:
         st.session_state.pagina = "peso"
     if st.button("📊 VER REGISTROS", use_container_width=True):
         st.session_state.pagina = "ver"
+    if st.button("🤖 GUÍA CICLADORA", use_container_width=True):  # <-- NUEVO BOTÓN
+        st.session_state.pagina = "ayuda_cicladora"
+        st.session_state.paso_cicladora = 1
 
 # ============================================================
 # PÁGINAS
@@ -464,17 +467,41 @@ if st.session_state.pagina == "nuevo":
             
             concentracion = st.selectbox("Concentración (Color)", ["Amarillo", "Verde", "Rojo"])
             
-            st.markdown("#### ⚖️ Pesos (en kg)")
+            # Selector de unidad de peso
+            unidad_peso = st.radio("Unidad de peso:", ["Kilogramos (kg)", "Gramos (g)"], horizontal=True)
+            
+            st.markdown("#### ⚖️ Pesos")
+            
+            # Factor de conversión: 1 kg = 1000 g
+            factor = 1.0 if unidad_peso == "Kilogramos (kg)" else 0.001  # Si ingresa gramos, convertir a kg
+            
             col1, col2, col3 = st.columns(3)
             with col1:
-                peso_llena = st.number_input("Peso bolsa llena (infusión)", min_value=0.0, step=0.1, format="%.1f", value=2.0)
-                st.caption("Bolsa de solución NUEVA")
+                if unidad_peso == "Kilogramos (kg)":
+                    peso_llena = st.number_input("Peso bolsa llena (infusión)", min_value=0.0, step=0.1, format="%.3f", value=2.0)
+                    st.caption("Bolsa de solución NUEVA (kg)")
+                else:
+                    peso_llena_g = st.number_input("Peso bolsa llena (infusión)", min_value=0, step=10, format="%d", value=2000)
+                    peso_llena = peso_llena_g / 1000
+                    st.caption("Bolsa de solución NUEVA (g)")
+            
             with col2:
-                peso_vacia = st.number_input("Peso bolsa vacía (opcional)", min_value=0.0, step=0.1, format="%.1f", value=0.0)
-                st.caption("Bolsa después de infundir")
+                if unidad_peso == "Kilogramos (kg)":
+                    peso_vacia = st.number_input("Peso bolsa vacía (opcional)", min_value=0.0, step=0.1, format="%.3f", value=0.0)
+                    st.caption("Bolsa después de infundir (kg)")
+                else:
+                    peso_vacia_g = st.number_input("Peso bolsa vacía (opcional)", min_value=0, step=10, format="%d", value=0)
+                    peso_vacia = peso_vacia_g / 1000
+                    st.caption("Bolsa después de infundir (g)")
+            
             with col3:
-                peso_drenaje = st.number_input("Peso bolsa drenaje", min_value=0.0, step=0.1, format="%.1f", value=2.2)
-                st.caption("Bolsa con líquido drenado")
+                if unidad_peso == "Kilogramos (kg)":
+                    peso_drenaje = st.number_input("Peso bolsa drenaje", min_value=0.0, step=0.1, format="%.3f", value=2.2)
+                    st.caption("Bolsa con líquido drenado (kg)")
+                else:
+                    peso_drenaje_g = st.number_input("Peso bolsa drenaje", min_value=0, step=10, format="%d", value=2200)
+                    peso_drenaje = peso_drenaje_g / 1000
+                    st.caption("Bolsa con líquido drenado (g)")
             
             # Mostrar volúmenes calculados
             if peso_llena > 0:
@@ -557,7 +584,238 @@ if st.session_state.pagina == "nuevo":
     if st.button("← Volver al menú"):
         st.session_state.pagina = "principal"
         st.rerun()
+
+# Página: Ayuda Cicladora (nueva página)
+if st.session_state.get("pagina") == "ayuda_cicladora":
+    st.markdown("---")
+    st.subheader("🤖 GUÍA PASO A PASO - CICLADORA BAXTER")
+    
+    # Inicializar el paso actual si no existe
+    if "paso_cicladora" not in st.session_state:
+        st.session_state.paso_cicladora = 1
+    
+    # Contenedor para el paso actual
+    paso_container = st.container()
+    
+    with paso_container:
+        if st.session_state.paso_cicladora == 1:
+            st.markdown("### PASO 1: PREPARACIÓN INICIAL")
+            st.markdown("""
+            **1. Encender el equipo**  
+            - Presiona el botón ubicado en la parte posterior del equipo  
+            - Espera a que aparezca la leyenda en la pantalla
+            
+            **2. Iniciar programa**  
+            - Presiona el botón verde "GO"  
+            - Selecciona "Modo volumen pequeño" y presiona verde nuevamente
+            """)
+            
+            if st.button("✅ HECHO - Continuar al Paso 2", use_container_width=True):
+                st.session_state.paso_cicladora = 2
+                st.rerun()
         
+        elif st.session_state.paso_cicladora == 2:
+            st.markdown("### PASO 2: COLOCAR EL CASSETTE")
+            st.markdown("""
+            **1. Preparar el cassette**  
+            - Retira el envoltorio del cassette  
+            - Levanta la manija para abrir la puerta del porta cassette  
+            - Inserta el cassette (la parte blanda debe mirar hacia la máquina)  
+            - Cierra la puerta bajando la palanca
+            
+            **2. Organizar líneas**  
+            - Acomoda el organizador azul  
+            - Cierra las 6 pinzas  
+            - Coloca la línea de drenaje dentro del bidón vacío
+            """)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("⬅️ Volver al Paso 1", use_container_width=True):
+                    st.session_state.paso_cicladora = 1
+                    st.rerun()
+            with col2:
+                if st.button("✅ HECHO - Continuar al Paso 3", use_container_width=True):
+                    st.session_state.paso_cicladora = 3
+                    st.rerun()
+        
+        elif st.session_state.paso_cicladora == 3:
+            st.markdown("### PASO 3: AUTOCOMPROBACIÓN")
+            st.markdown("""
+            **La máquina hará un test automático**  
+            - Espera mientras la máquina se autocomprueba  
+            - Mientras tanto, prepara tus manos para el siguiente paso  
+            - Lávate las manos profundamente
+            """)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("⬅️ Volver al Paso 2", use_container_width=True):
+                    st.session_state.paso_cicladora = 2
+                    st.rerun()
+            with col2:
+                if st.button("✅ HECHO - Continuar al Paso 4", use_container_width=True):
+                    st.session_state.paso_cicladora = 4
+                    st.rerun()
+        
+        elif st.session_state.paso_cicladora == 4:
+            st.markdown("### PASO 4: CONECTAR BOLSAS")
+            st.markdown("""
+            **1. Colocar pinzas**  
+            - Coloca las pinzas azules en las bolsas  
+            - Afloja la espiga del clamp rojo (bolsa superior)  
+            - Afloja la espiga del clamp blanco (segunda bolsa, si usas dos)
+            
+            **2. Conectar**  
+            - La espiga del clamp rojo va a la bolsa de arriba (calentada por la máquina)  
+            - Sujeta la pinza, rompe la mariposa de la bolsa y conecta la espiga
+            """)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("⬅️ Volver al Paso 3", use_container_width=True):
+                    st.session_state.paso_cicladora = 3
+                    st.rerun()
+            with col2:
+                if st.button("✅ HECHO - Continuar al Paso 5", use_container_width=True):
+                    st.session_state.paso_cicladora = 5
+                    st.rerun()
+        
+        elif st.session_state.paso_cicladora == 5:
+            st.markdown("### PASO 5: ABRIR PINZAS Y CEVAR")
+            st.markdown("""
+            **1. Abrir pinzas**  
+            - Retira las pinzas azules  
+            - Abre los clamp de las bolsas (rojo y blanco)  
+            - Abre el clamp de la línea del paciente  
+            - Presiona botón verde "CONTINUAR"
+            
+            **2. Cebado automático**  
+            - La máquina purgará las tubuladuras automáticamente  
+            - Espera a que termine
+            """)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("⬅️ Volver al Paso 4", use_container_width=True):
+                    st.session_state.paso_cicladora = 4
+                    st.rerun()
+            with col2:
+                if st.button("✅ HECHO - Continuar al Paso 6", use_container_width=True):
+                    st.session_state.paso_cicladora = 6
+                    st.rerun()
+        
+        elif st.session_state.paso_cicladora == 6:
+            st.markdown("### PASO 6: CONEXIÓN AL PACIENTE")
+            st.markdown("""
+            **1. Preparar conexión**  
+            - Cierra el clamp de la línea del paciente  
+            - Limpia la zona de conexión con alcohol según indicación médica  
+            - Procede a la conexión del catéter
+            
+            **2. Iniciar tratamiento**  
+            - Abre el catéter y el clamp de la línea del paciente  
+            - Presiona botón verde "CONTINUAR"  
+            - Selecciona "Modo volumen pequeño" (NO continuar aún)
+            """)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("⬅️ Volver al Paso 5", use_container_width=True):
+                    st.session_state.paso_cicladora = 5
+                    st.rerun()
+            with col2:
+                if st.button("✅ HECHO - Continuar al Paso 7", use_container_width=True):
+                    st.session_state.paso_cicladora = 7
+                    st.rerun()
+        
+        elif st.session_state.paso_cicladora == 7:
+            st.markdown("### PASO 7: VERIFICACIÓN INICIAL")
+            st.markdown("""
+            **Verificar drenaje inicial**  
+            - La máquina mostrará "Verificar drenaje inicial"  
+            - Aquí comienza el tratamiento  
+            - La máquina hará ciclos de: infusión → permanencia → drenaje  
+            - Esto tomará varias horas (puedes dormir)
+            """)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("⬅️ Volver al Paso 6", use_container_width=True):
+                    st.session_state.paso_cicladora = 6
+                    st.rerun()
+            with col2:
+                if st.button("✅ COMPRENDIDO - Siguiente", use_container_width=True):
+                    st.session_state.paso_cicladora = 8
+                    st.rerun()
+        
+        elif st.session_state.paso_cicladora == 8:
+            st.markdown("### PASO 8: FIN DEL TRATAMIENTO (AL DESPERTAR)")
+            st.markdown("""
+            **1. Drenaje manual al despertar**  
+            - Al despertar, la máquina mostrará "FIN DE TRATAMIENTO"  
+            - Debes pararte para hacer un drenaje manual  
+            - Presiona flecha hacia abajo hasta ver "DRENAJE MANUAL"  
+            - Confirma con la flecha izquierda  
+            - Espera a que termine el drenaje
+            
+            **2. Finalizar**  
+            - Presiona botón verde "CONTINUAR"  
+            - La máquina dirá "CIERRE CLAMP (TODOS)"  
+            - Cierra clamp de línea paciente y catéter  
+            - Presiona verde nuevamente
+            """)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("⬅️ Volver al Paso 7", use_container_width=True):
+                    st.session_state.paso_cicladora = 7
+                    st.rerun()
+            with col2:
+                if st.button("✅ HECHO - Siguiente", use_container_width=True):
+                    st.session_state.paso_cicladora = 9
+                    st.rerun()
+        
+        elif st.session_state.paso_cicladora == 9:
+            st.markdown("### PASO 9: DESCONEXIÓN Y REGISTRO")
+            st.markdown("""
+            **1. Desconectarse**  
+            - La máquina dirá "DESCONECTESE"  
+            - Realiza la limpieza según indicación médica  
+            - Abre la tapa, coloca alcohol en gel  
+            - Presiona verde para continuar  
+            - La máquina dirá "DESCONECTEME" - ya puedes sacar el cassette
+            
+            **2. Registrar datos**  
+            - Con la flecha hacia abajo, navega hasta ver los datos finales:  
+              • Drenaje inicial  
+              • Ultrafiltración total  
+              • Tiempo medio de permanencia  
+              • Tiempo perdido  
+            - **ANOTA ESTOS VALORES** para registrarlos en la app  
+            - Apaga el equipo con el botón posterior
+            """)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("⬅️ Volver al Paso 8", use_container_width=True):
+                    st.session_state.paso_cicladora = 8
+                    st.rerun()
+            with col2:
+                if st.button("🏁 FINALIZAR GUÍA", use_container_width=True):
+                    st.session_state.paso_cicladora = 1
+                    st.session_state.pagina = "principal"
+                    st.rerun()
+    
+    # Botón para salir de la guía
+    st.markdown("---")
+    if st.button("❌ Cerrar guía", use_container_width=True):
+        st.session_state.paso_cicladora = 1
+        st.session_state.pagina = "principal"
+        st.rerun()
+
+
+
 # Página: Informe PDF
 if st.session_state.pagina == "informe":
     st.markdown("---")
@@ -655,38 +913,318 @@ if st.session_state.pagina == "modificar":
     st.markdown("---")
     st.subheader("✏️ Modificar Registro")
     
-    registros = db.get_registros_fecha("2000-01-01", "2100-01-01")
-    if registros:
-        # Crear opciones para el selector
-        opciones = {}
-        for r in registros[:20]:
-            fecha = r['fecha'][-5:] if r['fecha'] else ''
-            hora = r.get('hora', '')[:5] if r.get('hora') else ''
-            tipo = r['tipo_dialisis']
+    # Paso 1: Seleccionar registro
+    if "modificar_paso" not in st.session_state:
+        st.session_state.modificar_paso = "seleccionar"
+        st.session_state.modificar_id = None
+        st.session_state.modificar_tipo = None
+    
+    if st.session_state.modificar_paso == "seleccionar":
+        registros = db.get_registros_fecha("2000-01-01", "2100-01-01")
+        if registros:
+            # Crear opciones para el selector
+            opciones = {}
+            for r in registros[:20]:
+                fecha = r['fecha'][-5:] if r['fecha'] else ''
+                hora = r.get('hora', '')[:5] if r.get('hora') else ''
+                if not hora and r.get('hora_inicio'):
+                    hora = r.get('hora_inicio', '')[:5]
+                tipo = r['tipo_dialisis']
+                
+                # Calcular UF según tipo
+                if tipo == 'Cicladora':
+                    uf = r.get('uf_total_cicladora_ml', 0) or 0
+                else:
+                    uf = r.get('uf_recambio_manual_ml', 0) or 0
+                
+                label = f"ID {r['id']} - {fecha} {hora} - {tipo} - UF: {uf:.0f} ml"
+                opciones[label] = {'id': r['id'], 'tipo': r['tipo_dialisis']}
             
-            # Calcular UF segun tipo
-            if tipo == 'Cicladora':
-                uf = r.get('uf_total_cicladora_ml', 0) or 0
-            else:
-                uf = r.get('uf_recambio_manual_ml', 0) or 0
+            seleccion = st.selectbox("Selecciona registro a modificar:", list(opciones.keys()))
+            st.session_state.modificar_id = opciones[seleccion]['id']
+            st.session_state.modificar_tipo = opciones[seleccion]['tipo']
             
-            label = f"ID {r['id']} - {fecha} {hora} - {tipo} - UF: {uf:.0f} ml"
-            opciones[label] = r['id']
+            if st.button("✏️ CONTINUAR CON MODIFICACIÓN", use_container_width=True):
+                st.session_state.modificar_paso = "editar"
+                st.rerun()
+        else:
+            st.info("No hay registros para modificar")
+            if st.button("← Volver al menú"):
+                st.session_state.pagina = "principal"
+                st.rerun()
+    
+    # Paso 2: Editar registro
+    elif st.session_state.modificar_paso == "editar":
+        registro_id = st.session_state.modificar_id
+        tipo = st.session_state.modificar_tipo
         
-        seleccion = st.selectbox("Selecciona registro a modificar:", list(opciones.keys()))
-        registro_id = opciones[seleccion]
+        if tipo == "Manual":
+            # Obtener datos del registro manual
+            registro = db.get_registro_manual_by_id(registro_id)
+            if not registro:
+                st.error("No se encontró el registro")
+                st.session_state.modificar_paso = "seleccionar"
+                st.rerun()
+            
+            with st.form("form_modificar_manual"):
+                st.markdown(f"### ✏️ Editando Registro Manual ID: {registro_id}")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    fecha = st.date_input(
+                        "Fecha", 
+                        datetime.strptime(registro['fecha'], '%Y-%m-%d').date(),
+                        format="DD/MM/YYYY"
+                    )
+                with col2:
+                    hora = st.time_input(
+                        "Hora",
+                        datetime.strptime(registro['hora'], '%H:%M:%S').time()
+                    )
+                
+                concentracion = st.selectbox(
+                    "Concentración (Color)",
+                    ["Amarillo", "Verde", "Rojo"],
+                    index=["Amarillo", "Verde", "Rojo"].index(registro['concentracion'])
+                )
+                
+                # Unidad de peso (recordar preferencia)
+                unidad_peso = st.radio(
+                    "Unidad de peso:",
+                    ["Kilogramos (kg)", "Gramos (g)"],
+                    horizontal=True
+                )
+                
+                st.markdown("#### ⚖️ Pesos")
+                
+                # Mostrar valores actuales
+                peso_llena_actual = float(registro['peso_bolsa_llena_kg'])
+                peso_vacia_actual = float(registro['peso_bolsa_vacia_kg'] or 0)
+                peso_drenaje_actual = float(registro['peso_bolsa_drenaje_kg'])
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    if unidad_peso == "Kilogramos (kg)":
+                        peso_llena = st.number_input(
+                            "Peso bolsa llena (infusión)",
+                            min_value=0.0, step=0.1, format="%.3f",
+                            value=peso_llena_actual
+                        )
+                        st.caption(f"Actual: {peso_llena_actual:.3f} kg")
+                    else:
+                        peso_llena_g = st.number_input(
+                            "Peso bolsa llena (infusión)",
+                            min_value=0, step=10, format="%d",
+                            value=int(peso_llena_actual * 1000)
+                        )
+                        peso_llena = peso_llena_g / 1000
+                        st.caption(f"Actual: {int(peso_llena_actual * 1000)} g")
+                
+                with col2:
+                    if unidad_peso == "Kilogramos (kg)":
+                        peso_vacia = st.number_input(
+                            "Peso bolsa vacía (opcional)",
+                            min_value=0.0, step=0.1, format="%.3f",
+                            value=peso_vacia_actual
+                        )
+                        st.caption(f"Actual: {peso_vacia_actual:.3f} kg")
+                    else:
+                        peso_vacia_g = st.number_input(
+                            "Peso bolsa vacía (opcional)",
+                            min_value=0, step=10, format="%d",
+                            value=int(peso_vacia_actual * 1000)
+                        )
+                        peso_vacia = peso_vacia_g / 1000
+                        st.caption(f"Actual: {int(peso_vacia_actual * 1000)} g")
+                
+                with col3:
+                    if unidad_peso == "Kilogramos (kg)":
+                        peso_drenaje = st.number_input(
+                            "Peso bolsa drenaje",
+                            min_value=0.0, step=0.1, format="%.3f",
+                            value=peso_drenaje_actual
+                        )
+                        st.caption(f"Actual: {peso_drenaje_actual:.3f} kg")
+                    else:
+                        peso_drenaje_g = st.number_input(
+                            "Peso bolsa drenaje",
+                            min_value=0, step=10, format="%d",
+                            value=int(peso_drenaje_actual * 1000)
+                        )
+                        peso_drenaje = peso_drenaje_g / 1000
+                        st.caption(f"Actual: {int(peso_drenaje_actual * 1000)} g")
+                
+                # Mostrar volúmenes calculados
+                if peso_llena > 0:
+                    vol_infundido = (peso_llena - peso_vacia) * 1000
+                    vol_drenado = peso_drenaje * 1000
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric(
+                            "Volumen infundido",
+                            f"{vol_infundido:.0f} ml",
+                            delta=f"{vol_infundido - (registro['volumen_infundido_ml'] or 0):.0f}"
+                        )
+                    with col2:
+                        st.metric(
+                            "Volumen drenado",
+                            f"{vol_drenado:.0f} ml",
+                            delta=f"{vol_drenado - (registro['volumen_drenado_ml'] or 0):.0f}"
+                        )
+                
+                observaciones = st.text_area(
+                    "📝 Observaciones",
+                    value=registro.get('observaciones', '')
+                )
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("💾 GUARDAR CAMBIOS", use_container_width=True):
+                        # Obtener último registro manual para recalcular balance
+                        ultimo = db.get_ultimo_registro_manual()
+                        
+                        # Calcular balance (usando el último registro como referencia)
+                        if ultimo and ultimo['id'] != registro_id:
+                            balance = (peso_drenaje * 1000) - ultimo.get('volumen_infundido_ml', 0)
+                        else:
+                            balance = (peso_drenaje * 1000) - (peso_llena - peso_vacia) * 1000
+                        
+                        datos_actualizados = {
+                            'fecha': fecha.strftime("%Y-%m-%d"),
+                            'hora': hora.strftime("%H:%M:%S"),
+                            'concentracion': concentracion,
+                            'peso_bolsa_llena_kg': peso_llena,
+                            'peso_bolsa_vacia_kg': peso_vacia,
+                            'peso_bolsa_drenaje_kg': peso_drenaje,
+                            'balance_ml': balance,
+                            'observaciones': observaciones
+                        }
+                        
+                        try:
+                            resultado = db.update_registro_manual(registro_id, datos_actualizados)
+                            if resultado:
+                                st.success("✅ Registro modificado correctamente")
+                                st.balloons()
+                                st.session_state.modificar_paso = "seleccionar"
+                                st.session_state.pagina = "principal"
+                                st.rerun()
+                            else:
+                                st.error("No se pudo actualizar el registro")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                
+                with col2:
+                    if st.form_submit_button("Cancelar", use_container_width=True):
+                        st.session_state.modificar_paso = "seleccionar"
+                        st.rerun()
         
-        st.info(f"✏️ Funcion de modificar en desarrollo - ID seleccionado: {registro_id}")
-        st.caption("Por ahora puedes eliminar el registro y crear uno nuevo")
-        
-        if st.button("← Volver al menu"):
-            st.session_state.pagina = "principal"
-            st.rerun()
-    else:
-        st.info("No hay registros para modificar")
-        if st.button("← Volver al menu"):
-            st.session_state.pagina = "principal"
-            st.rerun()
+        else:  # Cicladora
+            # Obtener datos del registro de cicladora
+            registro = db.get_registro_cicladora_by_id(registro_id)
+            if not registro:
+                st.error("No se encontró el registro")
+                st.session_state.modificar_paso = "seleccionar"
+                st.rerun()
+            
+            with st.form("form_modificar_cicladora"):
+                st.markdown(f"### ✏️ Editando Registro Cicladora ID: {registro_id}")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    fecha = st.date_input(
+                        "Fecha",
+                        datetime.strptime(registro['fecha'], '%Y-%m-%d').date(),
+                        format="DD/MM/YYYY"
+                    )
+                with col2:
+                    hora_inicio = st.time_input(
+                        "Hora inicio",
+                        datetime.strptime(registro['hora_inicio'], '%H:%M:%S').time()
+                    )
+                    hora_fin = st.time_input(
+                        "Hora fin",
+                        datetime.strptime(registro['hora_fin'], '%H:%M:%S').time()
+                    )
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    drenaje_inicial = st.number_input(
+                        "Vol. drenaje inicial (ml)",
+                        min_value=0, step=50,
+                        value=registro.get('vol_drenaje_inicial_ml', 0)
+                    )
+                    uf_total = st.number_input(
+                        "UF Total (ml)",
+                        min_value=0, step=50,
+                        value=registro.get('uf_total_cicladora_ml', 0)
+                    )
+                    tiempo_permanencia = st.number_input(
+                        "Tiempo permanencia promedio (min)",
+                        min_value=0, step=5,
+                        value=registro.get('tiempo_permanencia_promedio_min', 0)
+                    )
+                with col2:
+                    tiempo_perdido = st.number_input(
+                        "Tiempo perdido (min)",
+                        min_value=0, step=5,
+                        value=registro.get('tiempo_perdido_min', 0)
+                    )
+                    volumen_solucion = st.number_input(
+                        "Vol. total solución (ml)",
+                        min_value=0, step=100,
+                        value=registro.get('vol_total_solucion_ml', 0)
+                    )
+                    num_ciclos = st.number_input(
+                        "Número de ciclos",
+                        min_value=1, step=1,
+                        value=registro.get('numero_ciclos_completados', 4)
+                    )
+                
+                observaciones = st.text_area(
+                    "📝 Observaciones",
+                    value=registro.get('observaciones', '')
+                )
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("💾 GUARDAR CAMBIOS", use_container_width=True):
+                        datos_actualizados = {
+                            'fecha': fecha.strftime("%Y-%m-%d"),
+                            'hora_inicio': hora_inicio.strftime("%H:%M:%S"),
+                            'hora_fin': hora_fin.strftime("%H:%M:%S"),
+                            'vol_drenaje_inicial_ml': drenaje_inicial,
+                            'uf_total_cicladora_ml': uf_total,
+                            'tiempo_permanencia_promedio_min': tiempo_permanencia,
+                            'tiempo_perdido_min': tiempo_perdido,
+                            'vol_total_solucion_ml': volumen_solucion,
+                            'numero_ciclos_completados': num_ciclos,
+                            'observaciones': observaciones
+                        }
+                        
+                        try:
+                            resultado = db.update_registro_cicladora(registro_id, datos_actualizados)
+                            if resultado:
+                                st.success("✅ Registro modificado correctamente")
+                                st.balloons()
+                                st.session_state.modificar_paso = "seleccionar"
+                                st.session_state.pagina = "principal"
+                                st.rerun()
+                            else:
+                                st.error("No se pudo actualizar el registro")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                
+                with col2:
+                    if st.form_submit_button("Cancelar", use_container_width=True):
+                        st.session_state.modificar_paso = "seleccionar"
+                        st.rerun()
+    
+    # Botón para volver al menú (siempre visible)
+    if st.button("← Volver al menú principal", use_container_width=True):
+        st.session_state.modificar_paso = "seleccionar"
+        st.session_state.pagina = "principal"
+        st.rerun()
 
 # Página: Eliminar Registro
 if st.session_state.pagina == "eliminar":

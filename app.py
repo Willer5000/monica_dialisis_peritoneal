@@ -87,14 +87,46 @@ with st.sidebar:
     
     if ultimo:
         fecha = datetime.strptime(ultimo['fecha'], '%Y-%m-%d')
+        uf_valor = ultimo.get('uf_mostrar', 0)
+        
+        # Determinar color según UF
+        if uf_valor > 0:
+            color_uf = "#48bb78"  # Verde
+            icono_uf = "✅"
+            mensaje_uf = f"Eliminó {uf_valor:.0f} ml"
+        elif uf_valor < 0:
+            color_uf = "#f56565"  # Rojo
+            icono_uf = "⚠️"
+            mensaje_uf = f"Retuvo {abs(uf_valor):.0f} ml"
+        else:
+            color_uf = "#718096"  # Gris
+            icono_uf = "⚖️"
+            mensaje_uf = "Balance neutro"
+        
         st.markdown(f"""
-        <div class="ultimo-registro">
-            <strong>📅 {fecha.strftime('%d/%m/%Y')} {ultimo['hora'][:5]}</strong><br>
-            Tipo: {ultimo['tipo_dialisis']}<br>
-            UF: {ultimo.get('uf_total_dia_ml', 0):.0f} ml<br>
-            {'⚠️ UF Negativa' if ultimo.get('uf_total_dia_ml', 0) < 0 else '✓ Normal'}
+        <div style="background: white; padding: 1rem; border-radius: 10px; 
+                    border-left: 4px solid {color_uf}; margin: 1rem 0;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="font-size: 1.1rem; font-weight: bold;">
+                📅 {fecha.strftime('%d/%m/%Y')} {ultimo['hora'][:5]}
+            </div>
+            <div style="margin-top: 0.5rem;">
+                <span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 15px;">
+                    {ultimo['tipo_dialisis']}
+                </span>
+            </div>
+            <div style="margin-top: 0.5rem; font-size: 1.2rem; font-weight: bold; color: {color_uf};">
+                {icono_uf} {mensaje_uf}
+            </div>
+            <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #718096;">
+                UF Total del día: {ultimo.get('uf_total_dia_ml', 0):.0f} ml
+            </div>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Mostrar observaciones si existen
+        if ultimo.get('observaciones'):
+            st.markdown(f"📝 *{ultimo['observaciones']}*")
     else:
         st.info("No hay registros aún")
     
@@ -156,117 +188,8 @@ if 'pagina' not in st.session_state:
     st.session_state.pagina = "principal"
 
 # Página: Nuevo Registro
-if st.session_state.pagina == "nuevo":
-    st.markdown("---")
-    st.subheader("➕ Nuevo Registro de Diálisis")
-    
-    with st.form("form_nuevo_registro"):
-        col1, col2 = st.columns(2)
-        with col1:
-            fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), 
-                                 format="DD/MM/YYYY")
-        with col2:
-            hora = st.time_input("Hora", datetime.now(BAIRES_TZ).time())
-        
-        tipo = st.selectbox("Tipo de Diálisis", ["Manual", "Cicladora"])
-        
-        if tipo == "Manual":
-            st.markdown("##### 🖐️ Datos Manuales")
-            col1, col2 = st.columns(2)
-            with col1:
-                color = st.selectbox("Color de Bolsa", ["Amarillo", "Verde", "Rojo"])
-            with col2:
-                pass
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                peso_sol = st.number_input("⚖️ Peso Solución (kg)", 
-                                          min_value=0.0, step=0.1, format="%.1f",
-                                          help="Peso de la bolsa NUEVA")
-            with col2:
-                peso_dren = st.number_input("💧 Peso Drenaje (kg)", 
-                                           min_value=0.0, step=0.1, format="%.1f",
-                                           help="Peso de la bolsa de DRENAJE")
-            
-            if peso_sol > 0 and peso_dren > 0:
-                uf_calc = (peso_dren - peso_sol) * 1000
-                if uf_calc > 0:
-                    st.success(f"✅ UF calculada: {uf_calc:.0f} ml (eliminó líquido)")
-                elif uf_calc < 0:
-                    st.error(f"⚠️ UF calculada: {uf_calc:.0f} ml (retuvo líquido)")
-                else:
-                    st.info(f"UF calculada: 0 ml (balance neutro)")
-        else:
-            st.markdown("##### 🤖 Datos Cicladora")
-            uf_cic = st.number_input("UF Total (ml)", min_value=0, step=50,
-                                    help="Ultrafiltración total de la máquina")
-            st.info("La UF de cicladora se registra como valor total de la noche")
-        
-        observaciones = st.text_area("📝 Observaciones", placeholder="Ej: dolor, solución turbia, etc.")
-        
-        submitted = st.form_submit_button("💾 Guardar Registro", use_container_width=True)
-        if submitted:
-            datos = {
-                'fecha': fecha.strftime("%Y-%m-%d"),
-                'hora': hora.strftime("%H:%M:%S"),
-                'tipo': tipo,
-                'observaciones': observaciones
-            }
-            
-            if tipo == "Manual":
-                datos.update({
-                    'color_bolsa': color,
-                    'peso_solucion': peso_sol,
-                    'peso_drenaje': peso_dren
-                })
-            else:
-                datos['uf_cicladora'] = uf_cic
-            
-            try:
-                resultado = db.insert_registro(datos)
-                st.success("✅ Registro guardado correctamente")
-                st.balloons()
-                st.session_state.pagina = "principal"
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error al guardar: {e}")
-    
-    if st.button("← Volver al menú"):
-        st.session_state.pagina = "principal"
-        st.rerun()
-
-# Página: Actualizar Peso
-elif st.session_state.pagina == "peso":
-    st.markdown("---")
-    st.subheader("⚖️ Actualizar Peso y Altura")
-    
-    with st.form("form_peso"):
-        nuevo_peso = st.number_input("Nuevo Peso (kg)", 
-                                     min_value=30.0, max_value=200.0, 
-                                     value=float(config['peso_kg']), 
-                                     step=0.1, format="%.1f")
-        nueva_altura = st.number_input("Nueva Altura (m)", 
-                                       min_value=1.0, max_value=2.5, 
-                                       value=float(config['altura_m']), 
-                                       step=0.01, format="%.2f")
-        
-        submitted = st.form_submit_button("💾 Actualizar", use_container_width=True)
-        if submitted:
-            try:
-                db.update_configuracion(nuevo_peso, nueva_altura)
-                st.success("✅ Peso y altura actualizados")
-                st.balloons()
-                st.session_state.pagina = "principal"
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error: {e}")
-    
-    if st.button("← Volver al menú"):
-        st.session_state.pagina = "principal"
-        st.rerun()
-
 # Página: Ver Registros
-elif st.session_state.pagina == "ver":
+if st.session_state.pagina == "ver":
     st.markdown("---")
     st.subheader("📊 Historial de Registros")
     
@@ -276,10 +199,21 @@ elif st.session_state.pagina == "ver":
     if registros:
         df = pd.DataFrame(registros)
         df['fecha'] = pd.to_datetime(df['fecha'])
+        
+        # Calcular UF a mostrar según tipo
         df['uf_mostrar'] = df.apply(
             lambda x: x['uf_total_cicladora_ml'] if x['tipo_dialisis'] == 'Cicladora' 
             else x['uf_recambio_manual_ml'], axis=1
         )
+        
+        # Agrupar por día para gráficos diarios
+        df_diario = df.groupby(df['fecha'].dt.date).agg({
+            'uf_total_dia_ml': 'first',  # Todos los registros del mismo día tienen el mismo total
+            'tipo_dialisis': lambda x: 'Mixto' if (x == 'Cicladora').any() and (x == 'Manual').any() 
+                                         else ('Cicladora' if (x == 'Cicladora').all() else 'Manual'),
+            'id': 'count'
+        }).reset_index()
+        df_diario.columns = ['fecha', 'uf_total_dia', 'tipo_dia', 'num_registros']
         
         # Filtros
         col1, col2 = st.columns(2)
@@ -293,122 +227,201 @@ elif st.session_state.pagina == "ver":
         # Filtrar
         mask = (df['fecha'].dt.date >= fecha_inicio) & (df['fecha'].dt.date <= fecha_fin)
         df_filtrado = df[mask]
+        df_diario_filtrado = df_diario[
+            (df_diario['fecha'] >= fecha_inicio) & 
+            (df_diario['fecha'] <= fecha_fin)
+        ]
         
-        # Métricas del período
-        st.markdown("### 📈 Resumen del período")
+        # ============================================================
+        # MÉTRICAS CLAVE DEL PERÍODO
+        # ============================================================
+        st.markdown("### 📈 Métricas Clave del Período")
+        
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("Total registros", len(df_filtrado))
+            st.metric("Días con registro", len(df_diario_filtrado))
         with col2:
-            st.metric("UF promedio", f"{df_filtrado['uf_mostrar'].mean():.0f} ml")
+            uf_promedio = df_diario_filtrado['uf_total_dia'].mean()
+            delta_uf = uf_promedio - df_diario_filtrado['uf_total_dia'].iloc[-1] if len(df_diario_filtrado) > 0 else 0
+            st.metric("UF Promedio/día", f"{uf_promedio:.0f} ml", delta=f"{delta_uf:.0f}")
         with col3:
-            uf_negativas = len(df_filtrado[df_filtrado['uf_mostrar'] < 0])
-            st.metric("⚠️ UF negativas", uf_negativas)
+            uf_negativas = len(df_diario_filtrado[df_diario_filtrado['uf_total_dia'] < 0])
+            st.metric("⚠️ Días con UF negativa", uf_negativas)
         with col4:
-            st.metric("Manuales", len(df_filtrado[df_filtrado['tipo_dialisis'] == 'Manual']))
+            total_registros = len(df_filtrado)
+            st.metric("Total registros", total_registros)
         
-        # Gráfico de evolución
-        st.markdown("### 📉 Evolución de UF")
-        fig = px.line(df_filtrado.sort_values('fecha'), 
-                     x='fecha', y='uf_mostrar',
-                     title='Ultrafiltración por Registro',
-                     labels={'fecha': 'Fecha', 'uf_mostrar': 'UF (ml)'})
-        fig.add_hline(y=0, line_dash="dash", line_color="red", 
-                     annotation_text="Balance Neutro")
-        st.plotly_chart(fig, use_container_width=True)
+        # ============================================================
+        # GRÁFICO 1: EVOLUCIÓN DIARIA DE UF (TENDENCIA)
+        # ============================================================
+        st.markdown("### 📉 Evolución Diaria de Ultrafiltración")
         
-        # Tabla de datos
-        st.markdown("### 📋 Detalle de registros")
-        mostrar_cols = ['id', 'fecha', 'hora', 'tipo_dialisis', 'uf_mostrar', 
+        fig1 = go.Figure()
+        
+        # Línea de UF diaria
+        fig1.add_trace(go.Scatter(
+            x=df_diario_filtrado['fecha'],
+            y=df_diario_filtrado['uf_total_dia'],
+            mode='lines+markers',
+            name='UF Total del día',
+            line=dict(color='#667eea', width=3),
+            marker=dict(size=8, color='#667eea'),
+            hovertemplate='<b>%{x|%d/%m/%Y}</b><br>UF: %{y:.0f} ml<extra></extra>'
+        ))
+        
+        # Línea de referencia en 0
+        fig1.add_hline(y=0, line_dash="dash", line_color="red", 
+                      annotation_text="Balance Neutro")
+        
+        # Línea de tendencia (media móvil de 3 días)
+        if len(df_diario_filtrado) >= 3:
+            df_diario_filtrado['tendencia'] = df_diario_filtrado['uf_total_dia'].rolling(3, min_periods=1).mean()
+            fig1.add_trace(go.Scatter(
+                x=df_diario_filtrado['fecha'],
+                y=df_diario_filtrado['tendencia'],
+                mode='lines',
+                name='Tendencia (3 días)',
+                line=dict(color='#48bb78', width=2, dash='dot')
+            ))
+        
+        fig1.update_layout(
+            title='Evolución de UF por Día',
+            xaxis_title='Fecha',
+            yaxis_title='Ultrafiltración (ml)',
+            hovermode='x unified',
+            showlegend=True,
+            height=400
+        )
+        
+        st.plotly_chart(fig1, use_container_width=True)
+        
+        # ============================================================
+        # GRÁFICO 2: COMPARATIVA CICLADORA VS MANUAL
+        # ============================================================
+        st.markdown("### 🔄 Comparativa Cicladora vs Manual")
+        
+        # Separar datos por tipo
+        df_cicladora = df_filtrado[df_filtrado['tipo_dialisis'] == 'Cicladora']
+        df_manual = df_filtrado[df_filtrado['tipo_dialisis'] == 'Manual']
+        
+        fig2 = go.Figure()
+        
+        if not df_cicladora.empty:
+            fig2.add_trace(go.Scatter(
+                x=df_cicladora['fecha'],
+                y=df_cicladora['uf_total_cicladora_ml'],
+                mode='markers',
+                name='Cicladora',
+                marker=dict(size=10, color='#4299e1', symbol='circle'),
+                hovertemplate='<b>%{x|%d/%m/%Y}</b><br>Cicladora UF: %{y:.0f} ml<extra></extra>'
+            ))
+        
+        if not df_manual.empty:
+            fig2.add_trace(go.Scatter(
+                x=df_manual['fecha'],
+                y=df_manual['uf_recambio_manual_ml'],
+                mode='markers',
+                name='Manual',
+                marker=dict(size=10, color='#ed8936', symbol='square'),
+                hovertemplate='<b>%{x|%d/%m/%Y}</b><br>Manual UF: %{y:.0f} ml<extra></extra>'
+            ))
+        
+        fig2.add_hline(y=0, line_dash="dash", line_color="red")
+        
+        fig2.update_layout(
+            title='UF por Tipo de Diálisis',
+            xaxis_title='Fecha',
+            yaxis_title='Ultrafiltración (ml)',
+            hovermode='x unified',
+            height=400
+        )
+        
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        # ============================================================
+        # GRÁFICO 3: DISTRIBUCIÓN DE UF
+        # ============================================================
+        st.markdown("### 📊 Distribución de UF")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Histograma de UF
+            fig3 = px.histogram(
+                df_diario_filtrado, 
+                x='uf_total_dia',
+                nbins=20,
+                title='Distribución de UF Diaria',
+                labels={'uf_total_dia': 'UF (ml)', 'count': 'Frecuencia'},
+                color_discrete_sequence=['#667eea']
+            )
+            fig3.add_vline(x=0, line_dash="dash", line_color="red")
+            st.plotly_chart(fig3, use_container_width=True)
+        
+        with col2:
+            # Box plot por tipo de día
+            fig4 = px.box(
+                df_filtrado,
+                x='tipo_dialisis',
+                y='uf_mostrar',
+                title='Distribución UF por Tipo',
+                labels={'tipo_dialisis': 'Tipo', 'uf_mostrar': 'UF (ml)'},
+                color='tipo_dialisis',
+                color_discrete_map={'Cicladora': '#4299e1', 'Manual': '#ed8936'}
+            )
+            fig4.add_hline(y=0, line_dash="dash", line_color="red")
+            st.plotly_chart(fig4, use_container_width=True)
+        
+        # ============================================================
+        # TABLA DE DATOS
+        # ============================================================
+        st.markdown("### 📋 Detalle de Registros")
+        
+        # Preparar datos para tabla
+        mostrar_cols = ['id', 'fecha', 'hora', 'tipo_dialisis', 
+                       'uf_recambio_manual_ml', 'uf_total_cicladora_ml',
                        'color_bolsa', 'observaciones']
+        
         df_mostrar = df_filtrado[mostrar_cols].copy()
         df_mostrar['fecha'] = df_mostrar['fecha'].dt.strftime('%d/%m/%Y')
         df_mostrar['hora'] = df_mostrar['hora'].str[:5]
-        df_mostrar.columns = ['ID', 'Fecha', 'Hora', 'Tipo', 'UF (ml)', 
-                              'Color', 'Observaciones']
         
-        st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
-    else:
-        st.info("No hay registros aún")
-    
-    if st.button("← Volver al menú"):
-        st.session_state.pagina = "principal"
-        st.rerun()
-
-# Página: Informe PDF
-elif st.session_state.pagina == "informe":
-    st.markdown("---")
-    st.subheader("📄 Generar Informe PDF")
-    
-    # Obtener rango de fechas disponible
-    registros = db.get_registros_fecha("2000-01-01", "2100-01-01")
-    
-    if registros:
-        fechas = [datetime.strptime(r['fecha'], '%Y-%m-%d') for r in registros]
-        fecha_min = min(fechas).date()
-        fecha_max = max(fechas).date()
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            fecha_inicio = st.date_input("📅 Fecha inicio", 
-                                        fecha_min,
-                                        min_value=fecha_min,
-                                        max_value=fecha_max,
-                                        format="DD/MM/YYYY")
-        with col2:
-            fecha_fin = st.date_input("📅 Fecha fin", 
-                                     fecha_max,
-                                     min_value=fecha_min,
-                                     max_value=fecha_max,
-                                     format="DD/MM/YYYY")
-        
-        tipo_informe = st.radio(
-            "📋 Tipo de informe",
-            ["completo", "base", "resumen"],
-            format_func=lambda x: {
-                "completo": "📑 Completo (Base de datos + Resumen)",
-                "base": "📊 Solo Base de Datos (Horizontal)",
-                "resumen": "📈 Solo Informe Resumen (Vertical)"
-            }[x],
-            horizontal=True
+        # Crear columna de UF según tipo
+        df_mostrar['UF (ml)'] = df_mostrar.apply(
+            lambda x: x['uf_total_cicladora_ml'] if x['tipo_dialisis'] == 'Cicladora' 
+            else x['uf_recambio_manual_ml'], axis=1
         )
         
-        if st.button("📥 Generar PDF", use_container_width=True):
-            with st.spinner("Generando informe..."):
-                # Obtener datos filtrados
-                registros_filtrados = db.get_registros_fecha(
-                    fecha_inicio.strftime("%Y-%m-%d"),
-                    fecha_fin.strftime("%Y-%m-%d")
-                )
-                
-                # Obtener estadísticas
-                estadisticas = db.get_estadisticas_periodo(
-                    fecha_inicio.strftime("%Y-%m-%d"),
-                    fecha_fin.strftime("%Y-%m-%d")
-                )
-                
-                # Generar PDF
-                filename = generar_informe_pdf(
-                    registros_filtrados,
-                    estadisticas,
-                    fecha_inicio.strftime("%d/%m/%Y"),
-                    fecha_fin.strftime("%d/%m/%Y"),
-                    tipo_informe
-                )
-                
-                # Ofrecer descarga
-                with open(filename, "rb") as f:
-                    pdf_data = f.read()
-                
-                b64_pdf = base64.b64encode(pdf_data).decode()
-                href = f'<a href="data:application/octet-stream;base64,{b64_pdf}" download="{filename}">📥 Haz clic aquí para descargar el PDF</a>'
-                st.markdown(href, unsafe_allow_html=True)
-                st.success("✅ PDF generado correctamente")
-                
-                # Limpiar archivo temporal
-                os.remove(filename)
+        # Seleccionar y renombrar columnas finales
+        df_final = df_mostrar[['id', 'fecha', 'hora', 'tipo_dialisis', 'UF (ml)', 
+                               'color_bolsa', 'observaciones']]
+        df_final.columns = ['ID', 'Fecha', 'Hora', 'Tipo', 'UF (ml)', 
+                           'Color', 'Observaciones']
+        
+        # Aplicar color a UF negativas
+        def highlight_uf(val):
+            if pd.notna(val) and val < 0:
+                return 'color: red; font-weight: bold'
+            return ''
+        
+        st.dataframe(
+            df_final.style.applymap(highlight_uf, subset=['UF (ml)']),
+            use_container_width=True,
+            hide_index=True,
+            height=400
+        )
+        
+        # Exportar a CSV
+        csv = df_final.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Descargar CSV",
+            data=csv,
+            file_name=f"registros_{fecha_inicio.strftime('%Y%m%d')}_{fecha_fin.strftime('%Y%m%d')}.csv",
+            mime="text/csv"
+        )
+        
     else:
-        st.info("No hay datos para generar informe")
+        st.info("No hay registros aún. Comienza agregando un nuevo registro desde el menú principal.")
     
     if st.button("← Volver al menú"):
         st.session_state.pagina = "principal"

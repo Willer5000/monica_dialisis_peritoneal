@@ -54,6 +54,47 @@ class Database:
             .limit(1)\
             .execute()
         return response.data[0] if response.data else None
+
+    def get_registro_manual_by_id(self, registro_id):
+        """Obtener un registro manual por su ID"""
+        response = self.supabase.table('registros_manual')\
+            .select('*')\
+            .eq('id', registro_id)\
+            .execute()
+        return response.data[0] if response.data else None
+    
+    def get_registro_cicladora_by_id(self, registro_id):
+        """Obtener un registro de cicladora por su ID"""
+        response = self.supabase.table('registros_cicladora')\
+            .select('*')\
+            .eq('id', registro_id)\
+            .execute()
+        return response.data[0] if response.data else None
+    
+    def update_registro_manual(self, registro_id, datos):
+        """Actualizar un registro manual"""
+        try:
+            response = self.supabase.table('registros_manual')\
+                .update(datos)\
+                .eq('id', registro_id)\
+                .execute()
+            return response.data
+        except Exception as e:
+            print(f"Error actualizando registro manual: {e}")
+            return None
+    
+    def update_registro_cicladora(self, registro_id, datos):
+        """Actualizar un registro de cicladora"""
+        try:
+            response = self.supabase.table('registros_cicladora')\
+                .update(datos)\
+                .eq('id', registro_id)\
+                .execute()
+            return response.data
+        except Exception as e:
+            print(f"Error actualizando registro cicladora: {e}")
+            return None
+
     
     def insert_registro_manual(self, datos):
         ahora = datetime.now(BAIRES_TZ)

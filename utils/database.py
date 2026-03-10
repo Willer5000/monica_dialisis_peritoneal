@@ -86,8 +86,22 @@ class Database:
     def update_registro_cicladora(self, registro_id, datos):
         """Actualizar un registro de cicladora"""
         try:
+            registro = {
+                'fecha': datos.get('fecha'),
+                'hora_inicio': datos.get('hora_inicio'),
+                'hora_fin': datos.get('hora_fin'),
+                'vol_drenaje_inicial_ml': datos.get('vol_drenaje_inicial_ml'),
+                'uf_total_cicladora_ml': datos.get('uf_total_cicladora_ml'),
+                'tiempo_permanencia_promedio_min': datos.get('tiempo_permanencia_promedio_min'),
+                'tiempo_perdido_min': datos.get('tiempo_perdido_min'),
+                'numero_ciclos_completados': datos.get('numero_ciclos_completados'),
+                'concentracion_bolsa1': datos.get('concentracion_bolsa1'),
+                'concentracion_bolsa2': datos.get('concentracion_bolsa2'),
+                'observaciones': datos.get('observaciones')
+            }
+            
             response = self.supabase.table('registros_cicladora')\
-                .update(datos)\
+                .update(registro)\
                 .eq('id', registro_id)\
                 .execute()
             return response.data
@@ -122,9 +136,9 @@ class Database:
         
         response = self.supabase.table('registros_manual').insert(registro).execute()
         return response.data
-    
+
     def insert_registro_cicladora(self, datos):
-        """Insertar registro de cicladora con soporte para 2 bolsas"""
+        """Insertar registro de cicladora (solo datos de la máquina y colores)"""
         ahora = datetime.now(BAIRES_TZ)
         
         registro = {
@@ -135,12 +149,9 @@ class Database:
             'uf_total_cicladora_ml': datos.get('uf_total'),
             'tiempo_permanencia_promedio_min': datos.get('tiempo_permanencia'),
             'tiempo_perdido_min': datos.get('tiempo_perdido'),
-            'vol_total_solucion_ml': datos.get('volumen_solucion'),
             'numero_ciclos_completados': datos.get('num_ciclos'),
             'concentracion_bolsa1': datos.get('concentracion1'),
-            'volumen_bolsa1_ml': datos.get('volumen1'),
             'concentracion_bolsa2': datos.get('concentracion2'),
-            'volumen_bolsa2_ml': datos.get('volumen2'),
             'observaciones': datos.get('observaciones', '')
         }
         

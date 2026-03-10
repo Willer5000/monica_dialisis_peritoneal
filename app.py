@@ -1,4 +1,21 @@
 import streamlit as st
+# ============================================================
+# VERIFICACIÓN DE CONEXIÓN (AGREGAR TEMPORALMENTE)
+# ============================================================
+import os
+st.write("🔍 Verificando variables de entorno:")
+st.write(f"SUPABASE_URL existe: {'SÍ' if os.getenv('SUPABASE_URL') else 'NO'}")
+st.write(f"SUPABASE_KEY existe: {'SÍ' if os.getenv('SUPABASE_KEY') else 'NO'}")
+
+try:
+    from utils.database import Database
+    db = Database()
+    config = db.get_configuracion()
+    st.write("✅ Conexión a Supabase EXITOSA")
+    st.write(f"Paciente: {config.get('nombre')}")
+except Exception as e:
+    st.error(f"❌ Error conectando a Supabase: {e}")
+    st.stop()
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly.express as px
@@ -426,6 +443,186 @@ if st.session_state.pagina == "ver":
     if st.button("← Volver al menú"):
         st.session_state.pagina = "principal"
         st.rerun()
+
+# Página: Nuevo Registro
+if st.session_state.pagina == "nuevo":
+    st.markdown("---")
+    st.subheader("➕ Nuevo Registro de Diálisis")
+    
+    with st.form("form_nuevo_registro"):
+        col1, col2 = st.columns(2)
+        with col1:
+            fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
+        with col2:
+            hora = st.time_input("Hora", datetime.now(BAIRES_TZ).time())
+        
+        tipo = st.selectbox("Tipo de Diálisis", ["Manual", "Cicladora"])
+        
+        if tipo == "Manual":
+            st.markdown("##### 🖐️ Datos Manuales")
+            col1, col2 = st.columns(2)
+            with col1:
+                color = st.selectbox("Color de Bolsa", ["Amarillo", "Verde", "Rojo"])
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                peso_sol = st.number_input("⚖️ Peso Solución (kg)", min_value=0.0, step=0.1, format="%.1f")
+            with col2:
+                peso_dren = st.number_input("💧 Peso Drenaje (kg)", min_value=0.0, step=0.1, format="%.1f")
+            
+            if peso_sol > 0 and peso_dren > 0:
+                uf_calc = (peso_dren - peso_sol) * 1000
+                if uf_calc > 0:
+                    st.success(f"✅ UF calculada: {uf_calc:.0f} ml")
+                elif uf_calc < 0:
+                    st.error(f"⚠️ UF calculada: {uf_calc:.0f} ml")
+        else:
+            st.markdown("##### 🤖 Datos Cicladora")
+            uf_cic = st.number_input("UF Total (ml)", min_value=0, step=50)
+        
+        observaciones = st.text_area("📝 Observaciones")
+        
+        submitted = st.form_submit_button("💾 Guardar Registro", use_container_width=True)
+        if submitted:
+            datos = {
+                'fecha': fecha.strftime("%Y-%m-%d"),
+                'hora': hora.strftime("%H:%M:%S"),
+                'tipo': tipo,
+                'observaciones': observaciones
+            }
+            
+            if tipo == "Manual":
+                datos.update({
+                    'color_bolsa': color,
+                    'peso_solucion': peso_sol,
+                    'peso_drenaje': peso_dren
+                })
+            else:
+                datos['uf_cicladora'] = uf_cic
+            
+            try:
+                resultado = db.insert_registro(datos)
+                st.success("✅ Registro guardado correctamente")
+                st.balloons()
+                st.session_state.pagina = "principal"
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
+    
+    if st.button("← Volver al menú"):
+        st.session_state.pagina = "principal"
+        st.rerun()
+
+# Página: Actualizar Peso
+if st.session_state.pagina == "peso":
+    st.markdown("---")
+    st.subheader("⚖️ Actualizar Peso y Altura")
+    
+    with st.form("form_peso"):
+        nuevo_peso = st.number_input("Nuevo Peso (kg)", 
+                                     min_value=30.0, max_value=200.0, 
+                                     value=float(config['peso_kg']), 
+                                     step=0.1, format="%.1f")
+        nueva_altura = st.number_input("Nueva Altura (m)", 
+                                       min_value=1.0, max_value=2.5, 
+                                       value=float(config['altura_m']), 
+                                       step=0.01, format="%.2f")
+        
+        submitted = st.form_submit_button("💾 Actualizar", use_container_width=True)
+        if submitted:
+            try:
+                db.update_configuracion(nuevo_peso, nueva_altura)
+                st.success("✅ Peso y altura actualizados")
+                st.balloons()
+                st.session_state.pagina = "principal"
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
+    
+    if st.button("← Volver al menú"):
+        st.session_state.pagina = "principal"
+        st.rerun()
+
+# Página: Informe PDF
+if st.session_state.pagina == "informe":
+    st.markdown("---")
+    st.subheader("📄 Generar Informe PDF")
+    
+    registros = db.get_registros_fecha("2000-01-01", "2100-01-01")
+    
+    if registros:
+        fechas = [datetime.strptime(r['fecha'], '%Y-%m-%d') for r in registros]
+        fecha_min = min(fechas).date()
+        fecha_max = max(fechas).date()
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            fecha_inicio = st.date_input("📅 Fecha inicio", fecha_min, format="DD/MM/YYYY")
+        with col2:
+            fecha_fin = st.date_input("📅 Fecha fin", fecha_max, format="DD/MM/YYYY")
+        
+        tipo_informe = st.radio(
+            "📋 Tipo de informe",
+            ["completo", "base", "resumen"],
+            format_func=lambda x: {
+                "completo": "📑 Completo (Base + Resumen)",
+                "base": "📊 Solo Base de Datos",
+                "resumen": "📈 Solo Resumen"
+            }[x],
+            horizontal=True
+        )
+        
+        if st.button("📥 Generar PDF", use_container_width=True):
+            with st.spinner("Generando informe..."):
+                registros_filtrados = db.get_registros_fecha(
+                    fecha_inicio.strftime("%Y-%m-%d"),
+                    fecha_fin.strftime("%Y-%m-%d")
+                )
+                estadisticas = db.get_estadisticas_periodo(
+                    fecha_inicio.strftime("%Y-%m-%d"),
+                    fecha_fin.strftime("%Y-%m-%d")
+                )
+                
+                filename = generar_informe_pdf(
+                    registros_filtrados,
+                    estadisticas,
+                    fecha_inicio.strftime("%d/%m/%Y"),
+                    fecha_fin.strftime("%d/%m/%Y"),
+                    tipo_informe
+                )
+                
+                with open(filename, "rb") as f:
+                    pdf_data = f.read()
+                b64_pdf = base64.b64encode(pdf_data).decode()
+                href = f'<a href="data:application/octet-stream;base64,{b64_pdf}" download="{filename}">📥 Descargar PDF</a>'
+                st.markdown(href, unsafe_allow_html=True)
+                st.success("✅ PDF generado")
+                os.remove(filename)
+    else:
+        st.info("No hay datos para generar informe")
+    
+    if st.button("← Volver al menú"):
+        st.session_state.pagina = "principal"
+        st.rerun()
+
+# Página: Modificar (placeholder)
+if st.session_state.pagina == "modificar":
+    st.markdown("---")
+    st.subheader("✏️ Modificar Registro")
+    st.info("Funcionalidad en desarrollo")
+    if st.button("← Volver al menú"):
+        st.session_state.pagina = "principal"
+        st.rerun()
+
+# Página: Eliminar (placeholder)
+if st.session_state.pagina == "eliminar":
+    st.markdown("---")
+    st.subheader("🗑️ Eliminar Registro")
+    st.info("Funcionalidad en desarrollo")
+    if st.button("← Volver al menú"):
+        st.session_state.pagina = "principal"
+        st.rerun()
+
 
 # Footer
 st.markdown("---")

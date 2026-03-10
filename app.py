@@ -541,26 +541,36 @@ if st.session_state.pagina == "nuevo":
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
     
-    else:  # Cicladora (igual que antes)
+    else:  # Cicladora
         with st.form("form_cicladora"):
             st.markdown("### 🤖 Diálisis con Cicladora")
+            st.info("Registra los datos que muestra la máquina al final del tratamiento")
             
             col1, col2 = st.columns(2)
             with col1:
                 fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
-                hora_inicio = st.time_input("Hora inicio", datetime.now(BAIRES_TZ).time())
             with col2:
-                hora_fin = st.time_input("Hora fin", (datetime.now(BAIRES_TZ) + timedelta(hours=8)).time())
+                pass
             
-            st.markdown("#### 📊 Datos de la máquina")
+            st.markdown("#### 🧴 BOLSAS UTILIZADAS")
+            st.caption("La cicladora usa 2 bolsas. Selecciona los colores que utilizaste.")
+            
             col1, col2 = st.columns(2)
             with col1:
-                drenaje_inicial = st.number_input("Vol. drenaje inicial (ml)", min_value=0, step=50)
-                uf_total = st.number_input("UF Total (ml)", min_value=0, step=50)
+                conc1 = st.selectbox("Color Bolsa 1", ["Amarillo", "Verde", "Rojo"], key="conc1")
+            with col2:
+                conc2 = st.selectbox("Color Bolsa 2", ["Amarillo", "Verde", "Rojo"], key="conc2")
+            
+            st.markdown("#### 📊 DATOS DE LA MÁQUINA (al finalizar)")
+            st.caption("Anota los valores que muestra la pantalla de la cicladora")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                drenaje_inicial = st.number_input("Drenaje inicial (ml)", min_value=0, step=50, help="Volumen del primer drenaje")
+                uf_total = st.number_input("UF Total (ml)", min_value=0, step=50, help="Ultrafiltración total del tratamiento")
                 tiempo_permanencia = st.number_input("Tiempo permanencia promedio (min)", min_value=0, step=5)
             with col2:
                 tiempo_perdido = st.number_input("Tiempo perdido (min)", min_value=0, step=5)
-                volumen_solucion = st.number_input("Vol. total solución (ml)", min_value=0, step=100)
                 num_ciclos = st.number_input("Número de ciclos", min_value=1, step=1, value=4)
             
             observaciones = st.text_area("📝 Observaciones")
@@ -568,14 +578,15 @@ if st.session_state.pagina == "nuevo":
             if st.form_submit_button("💾 Guardar Registro Cicladora", use_container_width=True):
                 datos = {
                     'fecha': fecha.strftime("%Y-%m-%d"),
-                    'hora_inicio': hora_inicio.strftime("%H:%M:%S"),
-                    'hora_fin': hora_fin.strftime("%H:%M:%S"),
+                    'hora_inicio': datetime.now(BAIRES_TZ).time().strftime("%H:%M:%S"),  # Hora actual como inicio
+                    'hora_fin': (datetime.now(BAIRES_TZ) + timedelta(hours=8)).time().strftime("%H:%M:%S"),
                     'drenaje_inicial': drenaje_inicial,
                     'uf_total': uf_total,
                     'tiempo_permanencia': tiempo_permanencia,
                     'tiempo_perdido': tiempo_perdido,
-                    'volumen_solucion': volumen_solucion,
                     'num_ciclos': num_ciclos,
+                    'concentracion1': conc1,
+                    'concentracion2': conc2,
                     'observaciones': observaciones
                 }
                 try:
@@ -586,7 +597,7 @@ if st.session_state.pagina == "nuevo":
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
-    
+                
     if st.button("← Volver al menú"):
         st.session_state.pagina = "principal"
         st.rerun()

@@ -1225,6 +1225,8 @@ if st.session_state.pagina == "modificar":
                         'observaciones': observaciones
                     }
                     
+                    print(f"Enviando datos para actualizar: {datos_actualizados}")  # Para debug
+                    
                     try:
                         resultado = db.update_registro_manual(registro_id, datos_actualizados)
                         if resultado:
@@ -1234,7 +1236,7 @@ if st.session_state.pagina == "modificar":
                             st.session_state.pagina = "principal"
                             st.rerun()
                         else:
-                            st.error("No se pudo actualizar el registro")
+                            st.error("No se pudo actualizar el registro - Verifica que el ID existe")
                     except Exception as e:
                         st.error(f"Error: {e}")
             
@@ -1364,7 +1366,81 @@ if st.session_state.pagina == "modificar":
     if st.button("← Volver al menu"):
         st.session_state.pagina = "principal"
         st.rerun()
+
+
+# Página: Eliminar Registro
+if st.session_state.pagina == "eliminar":
+    st.markdown("---")
+    st.subheader("🗑️ Eliminar Registro")
+    
+    registros = db.get_registros_fecha("2000-01-01", "2100-01-01")
+    if registros:
+        # Crear opciones para el selector
+        opciones = {}
+        for r in registros[:20]:
+            fecha = r['fecha'][-5:] if r['fecha'] else ''
+            if r['tipo_dialisis'] == 'Manual':
+                hora = r.get('hora', '')[:5] if r.get('hora') else ''
+            else:
+                hora = r.get('hora_inicio', '')[:5] if r.get('hora_inicio') else ''
+            
+            tipo = r['tipo_dialisis']
+            
+            # Calcular UF según tipo
+            if tipo == 'Cicladora':
+                uf = r.get('uf_total_cicladora_ml', 0) or 0
+            else:
+                uf = r.get('uf_recambio_manual_ml', 0) or 0
+            
+            label = f"ID {r['id']} - {fecha} {hora} - {tipo} - UF: {uf:.0f} ml"
+            opciones[label] = {'id': r['id'], 'tipo': r['tipo_dialisis']}
         
+        seleccion = st.selectbox("Selecciona registro a eliminar:", list(opciones.keys()))
+        registro_id = opciones[seleccion]['id']
+        registro_tipo = opciones[seleccion]['tipo']
+        
+        # Mostrar detalles del registro seleccionado
+        st.warning(f"¿Estás seguro de eliminar el registro ID {registro_id}?")
+        st.info("⚠️ Esta acción no se puede deshacer")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🗑️ CONFIRMAR ELIMINACIÓN", type="primary", use_container_width=True):
+                try:
+                    # Determinar tabla según tipo
+                    if registro_tipo == 'Manual':
+                        tabla = 'registros_manual'
+                    else:
+                        tabla = 'registros_cicladora'
+                    
+                    # Eliminar de Supabase
+                    response = db.supabase.table(tabla).delete().eq('id', registro_id).execute()
+                    
+                    if response.data:
+                        st.success(f"✅ Registro ID {registro_id} eliminado correctamente")
+                        st.balloons()
+                        st.session_state.pagina = "principal"
+                        st.rerun()
+                    else:
+                        st.error("No se pudo eliminar el registro - Verifica que el ID existe")
+                except Exception as e:
+                    st.error(f"Error al eliminar: {e}")
+        with col2:
+            if st.button("Cancelar", use_container_width=True):
+                st.session_state.pagina = "principal"
+                st.rerun()
+    else:
+        st.info("No hay registros para eliminar")
+        if st.button("← Volver al menú"):
+            st.session_state.pagina = "principal"
+            st.rerun()
+    
+    if st.button("← Volver al menú"):
+        st.session_state.pagina = "principal"
+        st.rerun()
+
+
+
 # Footer
 st.markdown("---")
 st.markdown("""

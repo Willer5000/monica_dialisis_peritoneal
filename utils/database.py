@@ -124,6 +124,7 @@ class Database:
         return response.data
     
     def insert_registro_cicladora(self, datos):
+        """Insertar registro de cicladora con soporte para 2 bolsas"""
         ahora = datetime.now(BAIRES_TZ)
         
         registro = {
@@ -136,6 +137,10 @@ class Database:
             'tiempo_perdido_min': datos.get('tiempo_perdido'),
             'vol_total_solucion_ml': datos.get('volumen_solucion'),
             'numero_ciclos_completados': datos.get('num_ciclos'),
+            'concentracion_bolsa1': datos.get('concentracion1'),
+            'volumen_bolsa1_ml': datos.get('volumen1'),
+            'concentracion_bolsa2': datos.get('concentracion2'),
+            'volumen_bolsa2_ml': datos.get('volumen2'),
             'observaciones': datos.get('observaciones', '')
         }
         

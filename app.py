@@ -3,9 +3,9 @@ import streamlit as st
 # VERIFICACIÓN DE CONEXIÓN (AGREGAR TEMPORALMENTE)
 # ============================================================
 import os
-st.write("🔍 Verificando variables de entorno:")
-st.write(f"SUPABASE_URL existe: {'SÍ' if os.getenv('SUPABASE_URL') else 'NO'}")
-st.write(f"SUPABASE_KEY existe: {'SÍ' if os.getenv('SUPABASE_KEY') else 'NO'}")
+# st.write("🔍 Verificando variables de entorno:")
+# st.write(f"SUPABASE_URL existe: {'SÍ' if os.getenv('SUPABASE_URL') else 'NO'}")
+# st.write(f"SUPABASE_KEY existe: {'SÍ' if os.getenv('SUPABASE_KEY') else 'NO'}")
 
 try:
     from utils.database import Database
@@ -222,12 +222,7 @@ if st.session_state.pagina == "ver":
             else x['uf_recambio_manual_ml'], axis=1
         )
         
-        # Crear columna de UF por registro
-        df['uf_mostrar'] = df.apply(
-            lambda x: x['uf_total_cicladora_ml'] if x['tipo_dialisis'] == 'Cicladora' 
-            else x['uf_recambio_manual_ml'], axis=1
-        )
-        
+       
         # Agrupar por día para gráficos diarios
         df_diario = df.groupby(df['fecha'].dt.date).agg({
             'uf_mostrar': 'sum',  # Sumar todas las UF del día

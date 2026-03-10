@@ -105,6 +105,12 @@ with st.sidebar:
         fecha = datetime.strptime(ultimo['fecha'], '%Y-%m-%d')
         uf_valor = ultimo.get('uf_mostrar', 0)
         
+        # Determinar qué campo de hora usar
+        if ultimo['tipo_dialisis'] == 'Manual':
+            hora_mostrar = ultimo.get('hora', '')[:5] if ultimo.get('hora') else ''
+        else:
+            hora_mostrar = ultimo.get('hora_inicio', '')[:5] if ultimo.get('hora_inicio') else ''
+        
         # Determinar color según UF
         if uf_valor > 0:
             color_uf = "#48bb78"  # Verde
@@ -124,7 +130,7 @@ with st.sidebar:
                     border-left: 4px solid {color_uf}; margin: 1rem 0;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <div style="font-size: 1.1rem; font-weight: bold;">
-                📅 {fecha.strftime('%d/%m/%Y')} {ultimo['hora'][:5]}
+                📅 {fecha.strftime('%d/%m/%Y')} {hora_mostrar}
             </div>
             <div style="margin-top: 0.5rem;">
                 <span style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 15px;">
@@ -586,219 +592,292 @@ if st.session_state.pagina == "nuevo":
         st.rerun()
 
 # Página: Ayuda Cicladora (nueva página)
+# Página: Ayuda Cicladora (mejorada visualmente)
 if st.session_state.get("pagina") == "ayuda_cicladora":
-    st.markdown("---")
-    st.subheader("🤖 GUÍA PASO A PASO - CICLADORA BAXTER")
+    st.markdown("""
+    <style>
+    .paso-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin: 1rem 0;
+        border-left: 5px solid #667eea;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .paso-titulo {
+        color: #2d3748;
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+    }
+    .paso-contenido {
+        color: #4a5568;
+        line-height: 1.6;
+    }
+    .numero-paso {
+        background: #667eea;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: inline-block;
+        text-align: center;
+        line-height: 30px;
+        margin-right: 10px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
-    # Inicializar el paso actual si no existe
+    st.markdown("---")
+    st.markdown("## 🤖 GUÍA INTERACTIVA - CICLADORA BAXTER")
+    
+    # Inicializar paso
     if "paso_cicladora" not in st.session_state:
         st.session_state.paso_cicladora = 1
     
-    # Contenedor para el paso actual
-    paso_container = st.container()
+    # Barra de progreso
+    progreso = (st.session_state.paso_cicladora - 1) / 8
+    st.progress(progreso, text=f"Paso {st.session_state.paso_cicladora} de 9")
     
-    with paso_container:
+    # Contenedor del paso actual
+    with st.container():
         if st.session_state.paso_cicladora == 1:
-            st.markdown("### PASO 1: PREPARACIÓN INICIAL")
             st.markdown("""
-            **1. Encender el equipo**  
-            - Presiona el botón ubicado en la parte posterior del equipo  
-            - Espera a que aparezca la leyenda en la pantalla
+            <div class="paso-card">
+                <div class="paso-titulo">
+                    <span class="numero-paso">1</span> ⚡ PREPARACIÓN INICIAL
+                </div>
+                <div class="paso-contenido">
+                    <p>🔌 <strong>Encender el equipo:</strong> Busca el botón en la parte POSTERIOR de la máquina y presiónalo.</p>
+                    <p>⏳ Espera a que aparezca la pantalla de inicio.</p>
+                    <p>✅ Presiona el botón verde <strong>"GO"</strong>.</p>
+                    <p>📏 Selecciona <strong>"Modo volumen pequeño"</strong> y presiona verde nuevamente.</p>
+                    <p style="color: #48bb78; font-weight: bold;">✓ La máquina está lista para el siguiente paso</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
-            **2. Iniciar programa**  
-            - Presiona el botón verde "GO"  
-            - Selecciona "Modo volumen pequeño" y presiona verde nuevamente
-            """)
-            
-            if st.button("✅ HECHO - Continuar al Paso 2", use_container_width=True):
+            if st.button("✅ LISTO - PASO 2", use_container_width=True):
                 st.session_state.paso_cicladora = 2
                 st.rerun()
         
         elif st.session_state.paso_cicladora == 2:
-            st.markdown("### PASO 2: COLOCAR EL CASSETTE")
             st.markdown("""
-            **1. Preparar el cassette**  
-            - Retira el envoltorio del cassette  
-            - Levanta la manija para abrir la puerta del porta cassette  
-            - Inserta el cassette (la parte blanda debe mirar hacia la máquina)  
-            - Cierra la puerta bajando la palanca
-            
-            **2. Organizar líneas**  
-            - Acomoda el organizador azul  
-            - Cierra las 6 pinzas  
-            - Coloca la línea de drenaje dentro del bidón vacío
-            """)
+            <div class="paso-card">
+                <div class="paso-titulo">
+                    <span class="numero-paso">2</span> 📦 COLOCAR EL CASSETTE
+                </div>
+                <div class="paso-contenido">
+                    <p>📎 <strong>Preparar cassette:</strong> Sácalo del envoltorio con cuidado.</p>
+                    <p>🔓 Levanta la manija para abrir la puerta del porta cassette.</p>
+                    <p>➡️ Inserta el cassette con la <strong>parte blanda hacia la máquina</strong>.</p>
+                    <p>🔒 Cierra la puerta bajando la palanca (debe hacer clic).</p>
+                    <p>🧩 Acomoda el organizador azul.</p>
+                    <p>📌 Cierra las 6 pinzas (todas).</p>
+                    <p>🗑️ Coloca la línea de drenaje dentro del bidón vacío.</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("⬅️ Volver al Paso 1", use_container_width=True):
+                if st.button("⬅️ PASO 1", use_container_width=True):
                     st.session_state.paso_cicladora = 1
                     st.rerun()
             with col2:
-                if st.button("✅ HECHO - Continuar al Paso 3", use_container_width=True):
+                if st.button("✅ PASO 3", use_container_width=True):
                     st.session_state.paso_cicladora = 3
                     st.rerun()
         
         elif st.session_state.paso_cicladora == 3:
-            st.markdown("### PASO 3: AUTOCOMPROBACIÓN")
             st.markdown("""
-            **La máquina hará un test automático**  
-            - Espera mientras la máquina se autocomprueba  
-            - Mientras tanto, prepara tus manos para el siguiente paso  
-            - Lávate las manos profundamente
-            """)
+            <div class="paso-card">
+                <div class="paso-titulo">
+                    <span class="numero-paso">3</span> 🔄 AUTOCOMPROBACIÓN
+                </div>
+                <div class="paso-contenido">
+                    <p>⏳ <strong>La máquina hará un test automático.</strong> Espera unos segundos.</p>
+                    <p>🧼 <strong>Mientras tanto:</strong> Lávate las manos profundamente (mínimo 40 segundos).</p>
+                    <p>✅ Prepara las bolsas para el siguiente paso.</p>
+                    <p>🔔 La máquina pitará cuando termine.</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("⬅️ Volver al Paso 2", use_container_width=True):
+                if st.button("⬅️ PASO 2", use_container_width=True):
                     st.session_state.paso_cicladora = 2
                     st.rerun()
             with col2:
-                if st.button("✅ HECHO - Continuar al Paso 4", use_container_width=True):
+                if st.button("✅ PASO 4", use_container_width=True):
                     st.session_state.paso_cicladora = 4
                     st.rerun()
         
         elif st.session_state.paso_cicladora == 4:
-            st.markdown("### PASO 4: CONECTAR BOLSAS")
             st.markdown("""
-            **1. Colocar pinzas**  
-            - Coloca las pinzas azules en las bolsas  
-            - Afloja la espiga del clamp rojo (bolsa superior)  
-            - Afloja la espiga del clamp blanco (segunda bolsa, si usas dos)
-            
-            **2. Conectar**  
-            - La espiga del clamp rojo va a la bolsa de arriba (calentada por la máquina)  
-            - Sujeta la pinza, rompe la mariposa de la bolsa y conecta la espiga
-            """)
+            <div class="paso-card">
+                <div class="paso-titulo">
+                    <span class="numero-paso">4</span> 🧴 CONECTAR BOLSAS
+                </div>
+                <div class="paso-contenido">
+                    <p>🔵 Coloca las pinzas azules en las bolsas (para sujetarlas).</p>
+                    <p>🔴 Afloja la espiga del clamp ROJO (bolsa superior - se calienta).</p>
+                    <p>⚪ Afloja la espiga del clamp BLANCO (segunda bolsa, si usas dos).</p>
+                    <p style="background: #f0f9ff; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                        <strong>💡 Importante:</strong> La espiga del clamp rojo SIEMPRE va a la bolsa de arriba 
+                        (la que calienta la máquina).
+                    </p>
+                    <p>🖐️ Sujeta la pinza, rompe la mariposa de la bolsa y conecta la espiga.</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("⬅️ Volver al Paso 3", use_container_width=True):
+                if st.button("⬅️ PASO 3", use_container_width=True):
                     st.session_state.paso_cicladora = 3
                     st.rerun()
             with col2:
-                if st.button("✅ HECHO - Continuar al Paso 5", use_container_width=True):
+                if st.button("✅ PASO 5", use_container_width=True):
                     st.session_state.paso_cicladora = 5
                     st.rerun()
         
         elif st.session_state.paso_cicladora == 5:
-            st.markdown("### PASO 5: ABRIR PINZAS Y CEVAR")
             st.markdown("""
-            **1. Abrir pinzas**  
-            - Retira las pinzas azules  
-            - Abre los clamp de las bolsas (rojo y blanco)  
-            - Abre el clamp de la línea del paciente  
-            - Presiona botón verde "CONTINUAR"
-            
-            **2. Cebado automático**  
-            - La máquina purgará las tubuladuras automáticamente  
-            - Espera a que termine
-            """)
+            <div class="paso-card">
+                <div class="paso-titulo">
+                    <span class="numero-paso">5</span> 💧 CEVADO DE LÍNEAS
+                </div>
+                <div class="paso-contenido">
+                    <p>🔓 Retira las pinzas azules de las bolsas.</p>
+                    <p>🚰 Abre los clamp de las bolsas (rojo y blanco).</p>
+                    <p>🩺 Abre el clamp de la línea del paciente.</p>
+                    <p>✅ Presiona botón verde <strong>"CONTINUAR"</strong>.</p>
+                    <p>⏳ La máquina purgará las tubuladuras automáticamente (verás burbujas).</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("⬅️ Volver al Paso 4", use_container_width=True):
+                if st.button("⬅️ PASO 4", use_container_width=True):
                     st.session_state.paso_cicladora = 4
                     st.rerun()
             with col2:
-                if st.button("✅ HECHO - Continuar al Paso 6", use_container_width=True):
+                if st.button("✅ PASO 6", use_container_width=True):
                     st.session_state.paso_cicladora = 6
                     st.rerun()
         
         elif st.session_state.paso_cicladora == 6:
-            st.markdown("### PASO 6: CONEXIÓN AL PACIENTE")
             st.markdown("""
-            **1. Preparar conexión**  
-            - Cierra el clamp de la línea del paciente  
-            - Limpia la zona de conexión con alcohol según indicación médica  
-            - Procede a la conexión del catéter
-            
-            **2. Iniciar tratamiento**  
-            - Abre el catéter y el clamp de la línea del paciente  
-            - Presiona botón verde "CONTINUAR"  
-            - Selecciona "Modo volumen pequeño" (NO continuar aún)
-            """)
+            <div class="paso-card">
+                <div class="paso-titulo">
+                    <span class="numero-paso">6</span> 👤 CONEXIÓN AL PACIENTE
+                </div>
+                <div class="paso-contenido">
+                    <p>🔒 Cierra el clamp de la línea del paciente.</p>
+                    <p>🧴 Limpia la zona de conexión con alcohol (como te indicó el médico).</p>
+                    <p>🔄 Conecta el catéter del paciente a la línea.</p>
+                    <p>🔓 Abre el catéter y el clamp de la línea del paciente.</p>
+                    <p>✅ Presiona botón verde <strong>"CONTINUAR"</strong>.</p>
+                    <p>📏 Selecciona <strong>"Modo volumen pequeño"</strong> (NO presiones continuar aún).</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("⬅️ Volver al Paso 5", use_container_width=True):
+                if st.button("⬅️ PASO 5", use_container_width=True):
                     st.session_state.paso_cicladora = 5
                     st.rerun()
             with col2:
-                if st.button("✅ HECHO - Continuar al Paso 7", use_container_width=True):
+                if st.button("✅ PASO 7", use_container_width=True):
                     st.session_state.paso_cicladora = 7
                     st.rerun()
         
         elif st.session_state.paso_cicladora == 7:
-            st.markdown("### PASO 7: VERIFICACIÓN INICIAL")
             st.markdown("""
-            **Verificar drenaje inicial**  
-            - La máquina mostrará "Verificar drenaje inicial"  
-            - Aquí comienza el tratamiento  
-            - La máquina hará ciclos de: infusión → permanencia → drenaje  
-            - Esto tomará varias horas (puedes dormir)
-            """)
+            <div class="paso-card">
+                <div class="paso-titulo">
+                    <span class="numero-paso">7</span> 🌙 INICIO DEL TRATAMIENTO
+                </div>
+                <div class="paso-contenido">
+                    <p>🔍 La máquina mostrará <strong>"Verificar drenaje inicial"</strong>.</p>
+                    <p>⏳ Verás el primer drenaje (sale líquido del abdomen).</p>
+                    <p>🔄 Luego comenzarán los ciclos automáticos:</p>
+                    <p style="margin-left: 20px;">💧 INFUSIÓN → ⏱️ PERMANENCIA → 🚰 DRENAJE</p>
+                    <p>😴 <strong>Puedes dormir tranquilo.</strong> La máquina trabajará sola.</p>
+                    <p>⏰ El proceso tomará varias horas (lo que haya programado el médico).</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("⬅️ Volver al Paso 6", use_container_width=True):
+                if st.button("⬅️ PASO 6", use_container_width=True):
                     st.session_state.paso_cicladora = 6
                     st.rerun()
             with col2:
-                if st.button("✅ COMPRENDIDO - Siguiente", use_container_width=True):
+                if st.button("✅ PASO 8", use_container_width=True):
                     st.session_state.paso_cicladora = 8
                     st.rerun()
         
         elif st.session_state.paso_cicladora == 8:
-            st.markdown("### PASO 8: FIN DEL TRATAMIENTO (AL DESPERTAR)")
             st.markdown("""
-            **1. Drenaje manual al despertar**  
-            - Al despertar, la máquina mostrará "FIN DE TRATAMIENTO"  
-            - Debes pararte para hacer un drenaje manual  
-            - Presiona flecha hacia abajo hasta ver "DRENAJE MANUAL"  
-            - Confirma con la flecha izquierda  
-            - Espera a que termine el drenaje
-            
-            **2. Finalizar**  
-            - Presiona botón verde "CONTINUAR"  
-            - La máquina dirá "CIERRE CLAMP (TODOS)"  
-            - Cierra clamp de línea paciente y catéter  
-            - Presiona verde nuevamente
-            """)
+            <div class="paso-card">
+                <div class="paso-titulo">
+                    <span class="numero-paso">8</span> 🌅 AL DESPERTAR - FIN DEL TRATAMIENTO
+                </div>
+                <div class="paso-contenido">
+                    <p>🔔 La máquina mostrará <strong>"FIN DE TRATAMIENTO"</strong>.</p>
+                    <p>⬇️ Presiona flecha hacia abajo hasta ver <strong>"DRENAJE MANUAL"</strong>.</p>
+                    <p>⬅️ Confirma con la flecha izquierda.</p>
+                    <p>⏳ Espera a que termine el drenaje (vacía tu abdomen).</p>
+                    <p>✅ Presiona botón verde <strong>"CONTINUAR"</strong>.</p>
+                    <p>🔒 La máquina dirá <strong>"CIERRE CLAMP (TODOS)"</strong> - cierra clamp de línea y catéter.</p>
+                    <p>✅ Presiona verde nuevamente.</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("⬅️ Volver al Paso 7", use_container_width=True):
+                if st.button("⬅️ PASO 7", use_container_width=True):
                     st.session_state.paso_cicladora = 7
                     st.rerun()
             with col2:
-                if st.button("✅ HECHO - Siguiente", use_container_width=True):
+                if st.button("✅ PASO 9", use_container_width=True):
                     st.session_state.paso_cicladora = 9
                     st.rerun()
         
         elif st.session_state.paso_cicladora == 9:
-            st.markdown("### PASO 9: DESCONEXIÓN Y REGISTRO")
             st.markdown("""
-            **1. Desconectarse**  
-            - La máquina dirá "DESCONECTESE"  
-            - Realiza la limpieza según indicación médica  
-            - Abre la tapa, coloca alcohol en gel  
-            - Presiona verde para continuar  
-            - La máquina dirá "DESCONECTEME" - ya puedes sacar el cassette
-            
-            **2. Registrar datos**  
-            - Con la flecha hacia abajo, navega hasta ver los datos finales:  
-              • Drenaje inicial  
-              • Ultrafiltración total  
-              • Tiempo medio de permanencia  
-              • Tiempo perdido  
-            - **ANOTA ESTOS VALORES** para registrarlos en la app  
-            - Apaga el equipo con el botón posterior
-            """)
+            <div class="paso-card">
+                <div class="paso-titulo">
+                    <span class="numero-paso">9</span> 📋 REGISTRO DE DATOS
+                </div>
+                <div class="paso-contenido">
+                    <p>🫱 La máquina dirá <strong>"DESCONECTESE"</strong>.</p>
+                    <p>🧴 Limpia y aplica alcohol según indicación.</p>
+                    <p>✅ Presiona verde para continuar.</p>
+                    <p>📤 La máquina dirá <strong>"DESCONECTEME"</strong> - ya puedes sacar el cassette.</p>
+                    <p style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                        <strong>📝 AHORA TOMA NOTA DE ESTOS VALORES (ANÓTALOS):</strong><br>
+                        • 📊 Drenaje inicial: ______ ml<br>
+                        • 💧 Ultrafiltración total: ______ ml<br>
+                        • ⏱️ Tiempo medio de permanencia: ______ min<br>
+                        • ⌛ Tiempo perdido: ______ min
+                    </p>
+                    <p>🔌 Apaga el equipo con el botón posterior.</p>
+                    <p>🎯 <strong>¡TRATAMIENTO COMPLETADO!</strong></p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("⬅️ Volver al Paso 8", use_container_width=True):
+                if st.button("⬅️ PASO 8", use_container_width=True):
                     st.session_state.paso_cicladora = 8
                     st.rerun()
             with col2:
@@ -807,13 +886,11 @@ if st.session_state.get("pagina") == "ayuda_cicladora":
                     st.session_state.pagina = "principal"
                     st.rerun()
     
-    # Botón para salir de la guía
     st.markdown("---")
     if st.button("❌ Cerrar guía", use_container_width=True):
         st.session_state.paso_cicladora = 1
         st.session_state.pagina = "principal"
         st.rerun()
-
 
 
 # Página: Informe PDF
@@ -1120,105 +1197,74 @@ if st.session_state.pagina == "modificar":
                         st.rerun()
         
         else:  # Cicladora
-            # Obtener datos del registro de cicladora
-            registro = db.get_registro_cicladora_by_id(registro_id)
-            if not registro:
-                st.error("No se encontró el registro")
-                st.session_state.modificar_paso = "seleccionar"
-                st.rerun()
-            
-            with st.form("form_modificar_cicladora"):
-                st.markdown(f"### ✏️ Editando Registro Cicladora ID: {registro_id}")
+            with st.form("form_cicladora"):
+                st.markdown("### 🤖 Diálisis con Cicladora")
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    fecha = st.date_input(
-                        "Fecha",
-                        datetime.strptime(registro['fecha'], '%Y-%m-%d').date(),
-                        format="DD/MM/YYYY"
-                    )
+                    fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
+                    hora_inicio = st.time_input("Hora inicio", datetime.now(BAIRES_TZ).time())
                 with col2:
-                    hora_inicio = st.time_input(
-                        "Hora inicio",
-                        datetime.strptime(registro['hora_inicio'], '%H:%M:%S').time()
-                    )
-                    hora_fin = st.time_input(
-                        "Hora fin",
-                        datetime.strptime(registro['hora_fin'], '%H:%M:%S').time()
-                    )
+                    hora_fin = st.time_input("Hora fin", (datetime.now(BAIRES_TZ) + timedelta(hours=8)).time())
+                
+                st.markdown("#### 🧴 Bolsas utilizadas")
+                st.info("La cicladora puede usar 1 o 2 bolsas. Si usas 2, pueden ser del mismo color o diferentes.")
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    drenaje_inicial = st.number_input(
-                        "Vol. drenaje inicial (ml)",
-                        min_value=0, step=50,
-                        value=registro.get('vol_drenaje_inicial_ml', 0)
-                    )
-                    uf_total = st.number_input(
-                        "UF Total (ml)",
-                        min_value=0, step=50,
-                        value=registro.get('uf_total_cicladora_ml', 0)
-                    )
-                    tiempo_permanencia = st.number_input(
-                        "Tiempo permanencia promedio (min)",
-                        min_value=0, step=5,
-                        value=registro.get('tiempo_permanencia_promedio_min', 0)
-                    )
+                    st.markdown("**Bolsa 1 (superior - calentada)**")
+                    conc1 = st.selectbox("Color bolsa 1", ["Amarillo", "Verde", "Rojo"], key="conc1")
+                    vol1 = st.number_input("Volumen bolsa 1 (ml)", min_value=0, step=100, value=2000, key="vol1")
+                
                 with col2:
-                    tiempo_perdido = st.number_input(
-                        "Tiempo perdido (min)",
-                        min_value=0, step=5,
-                        value=registro.get('tiempo_perdido_min', 0)
-                    )
-                    volumen_solucion = st.number_input(
-                        "Vol. total solución (ml)",
-                        min_value=0, step=100,
-                        value=registro.get('vol_total_solucion_ml', 0)
-                    )
-                    num_ciclos = st.number_input(
-                        "Número de ciclos",
-                        min_value=1, step=1,
-                        value=registro.get('numero_ciclos_completados', 4)
-                    )
+                    st.markdown("**Bolsa 2 (opcional)**")
+                    usar_bolsa2 = st.checkbox("Usar segunda bolsa", value=False)
+                    if usar_bolsa2:
+                        conc2 = st.selectbox("Color bolsa 2", ["Amarillo", "Verde", "Rojo"], key="conc2")
+                        vol2 = st.number_input("Volumen bolsa 2 (ml)", min_value=0, step=100, value=2000, key="vol2")
+                    else:
+                        conc2 = None
+                        vol2 = 0
                 
-                observaciones = st.text_area(
-                    "📝 Observaciones",
-                    value=registro.get('observaciones', '')
-                )
-                
+                st.markdown("#### 📊 Datos de la máquina")
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("💾 GUARDAR CAMBIOS", use_container_width=True):
-                        datos_actualizados = {
-                            'fecha': fecha.strftime("%Y-%m-%d"),
-                            'hora_inicio': hora_inicio.strftime("%H:%M:%S"),
-                            'hora_fin': hora_fin.strftime("%H:%M:%S"),
-                            'vol_drenaje_inicial_ml': drenaje_inicial,
-                            'uf_total_cicladora_ml': uf_total,
-                            'tiempo_permanencia_promedio_min': tiempo_permanencia,
-                            'tiempo_perdido_min': tiempo_perdido,
-                            'vol_total_solucion_ml': volumen_solucion,
-                            'numero_ciclos_completados': num_ciclos,
-                            'observaciones': observaciones
-                        }
-                        
-                        try:
-                            resultado = db.update_registro_cicladora(registro_id, datos_actualizados)
-                            if resultado:
-                                st.success("✅ Registro modificado correctamente")
-                                st.balloons()
-                                st.session_state.modificar_paso = "seleccionar"
-                                st.session_state.pagina = "principal"
-                                st.rerun()
-                            else:
-                                st.error("No se pudo actualizar el registro")
-                        except Exception as e:
-                            st.error(f"Error: {e}")
-                
+                    drenaje_inicial = st.number_input("Vol. drenaje inicial (ml)", min_value=0, step=50)
+                    uf_total = st.number_input("UF Total (ml)", min_value=0, step=50)
+                    tiempo_permanencia = st.number_input("Tiempo permanencia promedio (min)", min_value=0, step=5)
                 with col2:
-                    if st.form_submit_button("Cancelar", use_container_width=True):
-                        st.session_state.modificar_paso = "seleccionar"
+                    tiempo_perdido = st.number_input("Tiempo perdido (min)", min_value=0, step=5)
+                    volumen_solucion = vol1 + (vol2 if usar_bolsa2 else 0)
+                    st.metric("Vol. total solución", f"{volumen_solucion} ml")
+                    num_ciclos = st.number_input("Número de ciclos", min_value=1, step=1, value=4)
+                
+                observaciones = st.text_area("📝 Observaciones")
+                
+                if st.form_submit_button("💾 Guardar Registro Cicladora", use_container_width=True):
+                    datos = {
+                        'fecha': fecha.strftime("%Y-%m-%d"),
+                        'hora_inicio': hora_inicio.strftime("%H:%M:%S"),
+                        'hora_fin': hora_fin.strftime("%H:%M:%S"),
+                        'drenaje_inicial': drenaje_inicial,
+                        'uf_total': uf_total,
+                        'tiempo_permanencia': tiempo_permanencia,
+                        'tiempo_perdido': tiempo_perdido,
+                        'volumen_solucion': volumen_solucion,
+                        'num_ciclos': num_ciclos,
+                        'concentracion1': conc1,
+                        'volumen1': vol1,
+                        'concentracion2': conc2 if usar_bolsa2 else None,
+                        'volumen2': vol2 if usar_bolsa2 else None,
+                        'observaciones': observaciones
+                    }
+                    try:
+                        db.insert_registro_cicladora(datos)
+                        st.success("✅ Registro de cicladora guardado")
+                        st.balloons()
+                        st.session_state.pagina = "principal"
                         st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
     
     # Botón para volver al menú (siempre visible)
     if st.button("← Volver al menú principal", use_container_width=True):

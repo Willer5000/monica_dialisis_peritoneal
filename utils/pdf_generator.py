@@ -197,22 +197,22 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
     # ============================================================
     if tipo_informe in ['resumen', 'completo'] and estadisticas:
         # Gráfico 1 - Evolución
+        pdf.add_page()
+        pdf.set_font('Arial', 'B', 14)
+        pdf.cell(0, 10, 'ANEXO 1 - Evolución de UF Diaria', 0, 1, 'C')
+        pdf.ln(5)
+        
         if estadisticas.get('fechas') and estadisticas.get('uf_por_dia'):
-            pdf.add_page()
-            pdf.set_font('Arial', 'B', 14)
-            pdf.cell(0, 10, 'ANEXO 1 - Evolución de UF Diaria', 0, 1, 'C')
-            pdf.ln(5)
-            
             archivo_grafico = generar_grafico_evolucion(
                 estadisticas['fechas'],
                 estadisticas['uf_por_dia'],
                 'Evolución de Ultrafiltración Diaria'
             )
-            pdf.image(archivo_grafico, x=10, y=pdf.get_y(), w=190)
-            pdf.ln(70)
-            os.unlink(archivo_grafico)
+            if os.path.exists(archivo_grafico):
+                pdf.image(archivo_grafico, x=10, y=pdf.get_y(), w=190)
+                os.unlink(archivo_grafico)
         
-        # Gráfico 2 - Comparativa
+        # Gráfico 2 - Comparativa (solo si hay datos)
         uf_cicladora_por_dia = []
         uf_manual_por_dia = []
         fechas_lista = []
@@ -234,9 +234,9 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
                 uf_manual_por_dia,
                 'Comparativa UF por Tipo'
             )
-            pdf.image(archivo_comparativo, x=10, y=pdf.get_y(), w=190)
-            pdf.ln(70)
-            os.unlink(archivo_comparativo)
+            if os.path.exists(archivo_comparativo):
+                pdf.image(archivo_comparativo, x=10, y=pdf.get_y(), w=190)
+                os.unlink(archivo_comparativo)
         
         # Gráfico 3 - Distribución
         if estadisticas.get('uf_cicladora_total', 0) > 0 or estadisticas.get('uf_manual_total', 0) > 0:
@@ -250,9 +250,9 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
                 estadisticas.get('uf_cicladora_total', 0),
                 estadisticas.get('uf_total_periodo', 0)
             )
-            pdf.image(archivo_torta, x=50, y=pdf.get_y(), w=110)
-            pdf.ln(70)
-            os.unlink(archivo_torta)
+            if os.path.exists(archivo_torta):
+                pdf.image(archivo_torta, x=50, y=pdf.get_y(), w=110)
+                os.unlink(archivo_torta)
     
     # ============================================================
     # BASE DE DATOS (registros detallados)

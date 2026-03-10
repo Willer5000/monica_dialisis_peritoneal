@@ -445,104 +445,119 @@ if st.session_state.pagina == "ver":
         st.rerun()
 
 # Página: Nuevo Registro
+# Página: Nuevo Registro (reemplaza esta sección completa)
 if st.session_state.pagina == "nuevo":
     st.markdown("---")
     st.subheader("➕ Nuevo Registro de Diálisis")
     
-    with st.form("form_nuevo_registro"):
-        col1, col2 = st.columns(2)
-        with col1:
-            fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
-        with col2:
-            hora = st.time_input("Hora", datetime.now(BAIRES_TZ).time())
-        
-        tipo = st.selectbox("Tipo de Diálisis", ["Manual", "Cicladora"])
-        
-        if tipo == "Manual":
-            st.markdown("##### 🖐️ Datos Manuales")
-            col1, col2 = st.columns(2)
-            with col1:
-                color = st.selectbox("Color de Bolsa", ["Amarillo", "Verde", "Rojo"])
+    tipo = st.radio("Seleccionar tipo:", ["Manual", "Cicladora"], horizontal=True)
+    
+    if tipo == "Manual":
+        with st.form("form_manual"):
+            st.markdown("### 🖐️ Diálisis Manual")
             
             col1, col2 = st.columns(2)
             with col1:
-                peso_sol = st.number_input("⚖️ Peso Solución (kg)", min_value=0.0, step=0.1, format="%.1f")
+                fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
             with col2:
-                peso_dren = st.number_input("💧 Peso Drenaje (kg)", min_value=0.0, step=0.1, format="%.1f")
+                hora = st.time_input("Hora", datetime.now(BAIRES_TZ).time())
             
-            if peso_sol > 0 and peso_dren > 0:
-                uf_calc = (peso_dren - peso_sol) * 1000
-                if uf_calc > 0:
-                    st.success(f"✅ UF calculada: {uf_calc:.0f} ml")
-                elif uf_calc < 0:
-                    st.error(f"⚠️ UF calculada: {uf_calc:.0f} ml")
-        else:
-            st.markdown("##### 🤖 Datos Cicladora")
-            uf_cic = st.number_input("UF Total (ml)", min_value=0, step=50)
-        
-        observaciones = st.text_area("📝 Observaciones")
-        
-        submitted = st.form_submit_button("💾 Guardar Registro", use_container_width=True)
-        if submitted:
-            datos = {
-                'fecha': fecha.strftime("%Y-%m-%d"),
-                'hora': hora.strftime("%H:%M:%S"),
-                'tipo': tipo,
-                'observaciones': observaciones
-            }
+            concentracion = st.selectbox("Concentración (Color)", ["Amarillo", "Verde", "Rojo"])
             
-            if tipo == "Manual":
-                datos.update({
-                    'color_bolsa': color,
-                    'peso_solucion': peso_sol,
-                    'peso_drenaje': peso_dren
-                })
-            else:
-                datos['uf_cicladora'] = uf_cic
+            st.markdown("#### ⚖️ Pesos (en kg)")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                peso_llena = st.number_input("Peso bolsa llena (infusión)", min_value=0.0, step=0.1, format="%.1f", value=2.0)
+                st.caption("Bolsa de solución NUEVA")
+            with col2:
+                peso_vacia = st.number_input("Peso bolsa vacía (opcional)", min_value=0.0, step=0.1, format="%.1f", value=0.0)
+                st.caption("Bolsa después de infundir")
+            with col3:
+                peso_drenaje = st.number_input("Peso bolsa drenaje", min_value=0.0, step=0.1, format="%.1f", value=2.2)
+                st.caption("Bolsa con líquido drenado")
             
-            try:
-                resultado = db.insert_registro(datos)
-                st.success("✅ Registro guardado correctamente")
-                st.balloons()
-                st.session_state.pagina = "principal"
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error: {e}")
+            # Mostrar volúmenes calculados
+            if peso_llena > 0:
+                vol_infundido = (peso_llena - peso_vacia) * 1000
+                vol_drenado = peso_drenaje * 1000
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Volumen infundido", f"{vol_infundido:.0f} ml")
+                with col2:
+                    st.metric("Volumen drenado", f"{vol_drenado:.0f} ml")
+            
+            observaciones = st.text_area("📝 Observaciones")
+            
+            if st.form_submit_button("💾 Guardar Registro Manual", use_container_width=True):
+                datos = {
+                    'fecha': fecha.strftime("%Y-%m-%d"),
+                    'hora': hora.strftime("%H:%M:%S"),
+                    'concentracion': concentracion,
+                    'peso_llena': peso_llena,
+                    'peso_vacia': peso_vacia,
+                    'peso_drenaje': peso_drenaje,
+                    'observaciones': observaciones
+                }
+                try:
+                    db.insert_registro_manual(datos)
+                    st.success("✅ Registro manual guardado")
+                    st.balloons()
+                    st.session_state.pagina = "principal"
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
+    
+    else:  # Cicladora (igual que antes)
+        with st.form("form_cicladora"):
+            st.markdown("### 🤖 Diálisis con Cicladora")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
+                hora_inicio = st.time_input("Hora inicio", datetime.now(BAIRES_TZ).time())
+            with col2:
+                hora_fin = st.time_input("Hora fin", (datetime.now(BAIRES_TZ) + timedelta(hours=8)).time())
+            
+            st.markdown("#### 📊 Datos de la máquina")
+            col1, col2 = st.columns(2)
+            with col1:
+                drenaje_inicial = st.number_input("Vol. drenaje inicial (ml)", min_value=0, step=50)
+                uf_total = st.number_input("UF Total (ml)", min_value=0, step=50)
+                tiempo_permanencia = st.number_input("Tiempo permanencia promedio (min)", min_value=0, step=5)
+            with col2:
+                tiempo_perdido = st.number_input("Tiempo perdido (min)", min_value=0, step=5)
+                volumen_solucion = st.number_input("Vol. total solución (ml)", min_value=0, step=100)
+                num_ciclos = st.number_input("Número de ciclos", min_value=1, step=1, value=4)
+            
+            observaciones = st.text_area("📝 Observaciones")
+            
+            if st.form_submit_button("💾 Guardar Registro Cicladora", use_container_width=True):
+                datos = {
+                    'fecha': fecha.strftime("%Y-%m-%d"),
+                    'hora_inicio': hora_inicio.strftime("%H:%M:%S"),
+                    'hora_fin': hora_fin.strftime("%H:%M:%S"),
+                    'drenaje_inicial': drenaje_inicial,
+                    'uf_total': uf_total,
+                    'tiempo_permanencia': tiempo_permanencia,
+                    'tiempo_perdido': tiempo_perdido,
+                    'volumen_solucion': volumen_solucion,
+                    'num_ciclos': num_ciclos,
+                    'observaciones': observaciones
+                }
+                try:
+                    db.insert_registro_cicladora(datos)
+                    st.success("✅ Registro de cicladora guardado")
+                    st.balloons()
+                    st.session_state.pagina = "principal"
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
     
     if st.button("← Volver al menú"):
         st.session_state.pagina = "principal"
         st.rerun()
-
-# Página: Actualizar Peso
-if st.session_state.pagina == "peso":
-    st.markdown("---")
-    st.subheader("⚖️ Actualizar Peso y Altura")
-    
-    with st.form("form_peso"):
-        nuevo_peso = st.number_input("Nuevo Peso (kg)", 
-                                     min_value=30.0, max_value=200.0, 
-                                     value=float(config['peso_kg']), 
-                                     step=0.1, format="%.1f")
-        nueva_altura = st.number_input("Nueva Altura (m)", 
-                                       min_value=1.0, max_value=2.5, 
-                                       value=float(config['altura_m']), 
-                                       step=0.01, format="%.2f")
         
-        submitted = st.form_submit_button("💾 Actualizar", use_container_width=True)
-        if submitted:
-            try:
-                db.update_configuracion(nuevo_peso, nueva_altura)
-                st.success("✅ Peso y altura actualizados")
-                st.balloons()
-                st.session_state.pagina = "principal"
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error: {e}")
-    
-    if st.button("← Volver al menú"):
-        st.session_state.pagina = "principal"
-        st.rerun()
-
 # Página: Informe PDF
 if st.session_state.pagina == "informe":
     st.markdown("---")

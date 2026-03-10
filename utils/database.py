@@ -48,10 +48,15 @@ class Database:
         }
         
         if datos['tipo'] == 'Manual':
+            peso_sol = float(datos['peso_solucion'])
+            peso_dren = float(datos['peso_drenaje'])
+            uf_manual = (peso_dren - peso_sol) * 1000
+            
             registro.update({
                 'color_bolsa': datos['color_bolsa'],
-                'peso_bolsa_solucion_kg': float(datos['peso_solucion']),
-                'peso_bolsa_drenaje_kg': float(datos['peso_drenaje'])
+                'peso_bolsa_solucion_kg': peso_sol,
+                'peso_bolsa_drenaje_kg': peso_dren,
+                'uf_recambio_manual_ml': uf_manual
             })
         else:
             registro.update({

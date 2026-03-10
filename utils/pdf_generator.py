@@ -1,0 +1,165 @@
+from fpdf import FPDF
+import pandas as pd
+from datetime import datetime
+import matplotlib.pyplot as plt
+import io
+import base64
+import os
+
+class PDFReport(FPDF):
+    def __init__(self, orientation='P', unit='mm', format='A4'):
+        super().__init__(orientation, unit, format)
+        self.set_auto_page_break(auto=True, margin=15)
+    
+    def header(self):
+        if self.page_no() == 1:
+            self.set_font('Arial', 'B', 14)
+            self.cell(0, 10, 'INFORME DE DIÁLISIS PERITONEAL', 0, 1, 'C')
+            self.set_font('Arial', '', 10)
+            self.cell(0, 6, f'Paciente: Mónica Danitza Rojas Rocha - DNI: 93.620.268', 0, 1, 'C')
+            self.ln(5)
+    
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+
+def generar_informe_pdf(datos, estadisticas, fecha_inicio, fecha_fin, tipo_informe):
+    """Genera PDF con informe de diálisis"""
+    
+    pdf = PDFReport()
+    
+    if tipo_informe == 'base':
+        pdf = PDFReport(orientation='L')  # Horizontal para base de datos
+    
+    pdf.add_page()
+    
+    # ============================================================
+    # ENCABEZADO DEL INFORME
+    # ============================================================
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(0, 8, f'Período: {fecha_inicio} al {fecha_fin}', 0, 1)
+    pdf.cell(0, 8, f'Fecha de generación: {datetime.now().strftime("%d/%m/%Y %H:%M")}', 0, 1)
+    pdf.ln(5)
+    
+    # ============================================================
+    # SOLO INFORME RESUMEN O COMPLETO
+    # ============================================================
+    if tipo_informe in ['resumen', 'completo'] and estadisticas:
+        pdf.set_font('Arial', 'B', 14)
+        pdf.cell(0, 10, 'RESUMEN ESTADÍSTICO', 0, 1)
+        pdf.ln(2)
+        
+        # Estadísticas generales
+        pdf.set_font('Arial', 'B', 11)
+        pdf.cell(0, 7, '📊 Datos Generales:', 0, 1)
+        pdf.set_font('Arial', '', 10)
+        pdf.cell(0, 6, f'   • Días con tratamiento: {estadisticas["total_dias"]}', 0, 1)
+        pdf.cell(0, 6, f'   • Total de registros: {estadisticas["total_registros"]}', 0, 1)
+        pdf.cell(0, 6, f'   • Recambios manuales: {estadisticas["total_recambios_manuales"]}', 0, 1)
+        pdf.ln(3)
+        
+        # UF (Ultrafiltración)
+        pdf.set_font('Arial', 'B', 11)
+        pdf.cell(0, 7, '💧 Ultrafiltración (UF):', 0, 1)
+        pdf.set_font('Arial', '', 10)
+        pdf.cell(0, 6, f'   • UF Total del período: {estadisticas["uf_total_periodo"]:.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   • UF Promedio por día: {estadisticas["uf_promedio_dia"]:.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   • UF Cicladora total: {estadisticas["uf_cicladora_total"]:.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   • UF Manual total: {estadisticas["uf_manual_total"]:.0f} ml', 0, 1)
+        pdf.ln(3)
+        
+        # Análisis clínico
+        pdf.set_font('Arial', 'B', 11)
+        pdf.cell(0, 7, '⚕️ Análisis Clínico:', 0, 1)
+        pdf.set_font('Arial', '', 10)
+        
+        if estadisticas["dias_con_uf_negativa"] > 0:
+            pdf.set_text_color(255, 0, 0)
+            pdf.cell(0, 6, f'   • ⚠️ Días con UF negativa: {estadisticas["dias_con_uf_negativa"]}', 0, 1)
+            pdf.set_text_color(0, 0, 0)
+        else:
+            pdf.cell(0, 6, f'   • Días con UF negativa: 0 (✓ Sin retención de líquidos)', 0, 1)
+        
+        pdf.cell(0, 6, f'   • Días con UF positiva: {estadisticas["dias_con_uf_positiva"]}', 0, 1)
+        pdf.ln(5)
+        
+        # Tabla de resumen diario
+        pdf.set_font('Arial', 'B', 11)
+        pdf.cell(0, 7, '📅 Resumen Diario:', 0, 1)
+        pdf.ln(2)
+        
+        # Encabezados de tabla
+        pdf.set_font('Arial', 'B', 9)
+        col_widths = [30, 25, 25, 25, 25]
+        headers = ['Fecha', 'UF Cici', 'N° Manual', 'UF Manual', 'UF Total']
+        
+        x = pdf.get_x()
+        for i, header in enumerate(headers):
+            pdf.cell(col_widths[i], 7, header, 1, 0, 'C')
+        pdf.ln()
+        
+        # Datos de la tabla
+        pdf.set_font('Arial', '', 8)
+        for fecha, datos_dia in sorted(estadisticas['dias'].items()):
+            fecha_obj = datetime.strptime(fecha, '%Y-%m-%d')
+            fecha_str = fecha_obj.strftime('%d/%m')
+            
+            pdf.cell(col_widths[0], 6, fecha_str, 1, 0, 'C')
+            pdf.cell(col_widths[1], 6, f'{datos_dia["uf_cicladora"]:.0f}', 1, 0, 'R')
+            pdf.cell(col_widths[2], 6, f'{datos_dia["num_manuales"]}', 1, 0, 'C')
+            pdf.cell(col_widths[3], 6, f'{datos_dia["uf_manual"]:.0f}', 1, 0, 'R')
+            total_uf = datos_dia["uf_cicladora"] + datos_dia["uf_manual"]
+            
+            # Color según UF
+            if total_uf < 0:
+                pdf.set_text_color(255, 0, 0)
+            pdf.cell(col_widths[4], 6, f'{total_uf:.0f}', 1, 0, 'R')
+            pdf.set_text_color(0, 0, 0)
+            pdf.ln()
+        
+        pdf.ln(10)
+    
+    # ============================================================
+    # BASE DE DATOS (SOLO O COMPLETO)
+    # ============================================================
+    if tipo_informe in ['base', 'completo'] and datos:
+        if tipo_informe == 'completo':
+            pdf.add_page()
+        
+        pdf.set_font('Arial', 'B', 14)
+        pdf.cell(0, 10, 'BASE DE DATOS - REGISTROS DETALLADOS', 0, 1)
+        pdf.ln(5)
+        
+        # Tabla de registros (simplificada para PDF)
+        pdf.set_font('Arial', 'B', 8)
+        headers_tabla = ['ID', 'Fecha', 'Hora', 'Tipo', 'UF Manual', 'UF Cici', 'Obs']
+        col_widths_tabla = [10, 20, 15, 18, 20, 20, 35]
+        
+        x = pdf.get_x()
+        for i, header in enumerate(headers_tabla):
+            pdf.cell(col_widths_tabla[i], 6, header, 1, 0, 'C')
+        pdf.ln()
+        
+        # Datos
+        pdf.set_font('Arial', '', 7)
+        for reg in datos[:50]:  # Limitar a 50 registros para PDF
+            pdf.cell(col_widths_tabla[0], 5, str(reg['id']), 1, 0, 'C')
+            pdf.cell(col_widths_tabla[1], 5, reg['fecha'][5:], 1, 0, 'C')
+            pdf.cell(col_widths_tabla[2], 5, reg['hora'][:5], 1, 0, 'C')
+            pdf.cell(col_widths_tabla[3], 5, reg['tipo_dialisis'][:3], 1, 0, 'C')
+            
+            uf_manual = reg.get('uf_recambio_manual_ml', 0)
+            pdf.cell(col_widths_tabla[4], 5, f'{uf_manual:.0f}' if uf_manual else '-', 1, 0, 'R')
+            
+            uf_cici = reg.get('uf_total_cicladora_ml', 0)
+            pdf.cell(col_widths_tabla[5], 5, f'{uf_cici:.0f}' if uf_cici else '-', 1, 0, 'R')
+            
+            obs = (reg.get('observaciones', '')[:20] + '...') if len(reg.get('observaciones', '')) > 20 else reg.get('observaciones', '')
+            pdf.cell(col_widths_tabla[6], 5, obs, 1, 0, 'L')
+            pdf.ln()
+    
+    # Guardar PDF
+    filename = f"informe_dialisis_{fecha_inicio}_a_{fecha_fin}.pdf"
+    pdf.output(filename)
+    return filename

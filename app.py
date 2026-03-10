@@ -462,6 +462,18 @@ if st.session_state.pagina == "nuevo":
     tipo = st.radio("Seleccionar tipo:", ["Manual", "Cicladora"], horizontal=True)
     
     if tipo == "Manual":
+        # Inicializar estado para unidad
+        if "unidad_manual" not in st.session_state:
+            st.session_state.unidad_manual = "Kilogramos (kg)"
+
+        # Selector de unidad de peso (fuera del form)
+        unidad = st.radio(
+            "Unidad de peso:",
+            ["Kilogramos (kg)", "Gramos (g)"],
+            horizontal=True,
+            key="unidad_manual"
+        )
+        
         with st.form("form_manual"):
             st.markdown("### 🖐️ Diálisis Manual")
             
@@ -473,44 +485,45 @@ if st.session_state.pagina == "nuevo":
             
             concentracion = st.selectbox("Concentración (Color)", ["Amarillo", "Verde", "Rojo"])
             
-            # Selector de unidad de peso
-            unidad_peso = st.radio("Unidad de peso:", ["Kilogramos (kg)", "Gramos (g)"], horizontal=True, key="unidad_manual")
+            # Selector de unidad de peso (fuera del form para que actualice inmediatamente)
+            st.markdown("---")
             
-            st.markdown("#### ⚖️ Pesos")
-            
-            # Variable para almacenar valores en kg internamente
+            # Variable para almacenar valores en kg
             peso_llena_kg = 0
             peso_vacia_kg = 0
             peso_drenaje_kg = 0
             
-            col1, col2, col3 = st.columns(3)
-            
-            if unidad_peso == "Kilogramos (kg)":
+            # Mostrar campos según unidad seleccionada
+            if st.session_state.unidad_manual == "Kilogramos (kg)":
+                st.markdown("#### ⚖️ Pesos (en kilogramos)")
+                col1, col2, col3 = st.columns(3)
                 with col1:
                     peso_llena = st.number_input("Peso bolsa llena (infusión)", min_value=0.0, step=0.1, format="%.3f", value=2.0, key="peso_llena_kg")
                     peso_llena_kg = peso_llena
-                    st.caption("Bolsa de solución NUEVA (kg)")
+                    st.caption("Bolsa de solución NUEVA")
                 with col2:
                     peso_vacia = st.number_input("Peso bolsa vacía (opcional)", min_value=0.0, step=0.1, format="%.3f", value=0.0, key="peso_vacia_kg")
                     peso_vacia_kg = peso_vacia
-                    st.caption("Bolsa después de infundir (kg)")
+                    st.caption("Bolsa después de infundir")
                 with col3:
                     peso_drenaje = st.number_input("Peso bolsa drenaje", min_value=0.0, step=0.1, format="%.3f", value=2.2, key="peso_drenaje_kg")
                     peso_drenaje_kg = peso_drenaje
-                    st.caption("Bolsa con líquido drenado (kg)")
+                    st.caption("Bolsa con líquido drenado")
             else:  # Gramos
+                st.markdown("#### ⚖️ Pesos (en gramos)")
+                col1, col2, col3 = st.columns(3)
                 with col1:
-                    peso_llena_g = st.number_input("Peso bolsa llena (infusión)", min_value=0, step=10, format="%d", value=2000, key="peso_llena_g")
+                    peso_llena_g = st.number_input("Peso bolsa llena (infusión) (g)", min_value=0, step=10, format="%d", value=2000, key="peso_llena_g")
                     peso_llena_kg = peso_llena_g / 1000
-                    st.caption(f"Bolsa de solución NUEVA ({peso_llena_g} g = {peso_llena_kg:.3f} kg)")
+                    st.caption(f"Equivale a {peso_llena_kg:.3f} kg")
                 with col2:
-                    peso_vacia_g = st.number_input("Peso bolsa vacía (opcional)", min_value=0, step=10, format="%d", value=0, key="peso_vacia_g")
+                    peso_vacia_g = st.number_input("Peso bolsa vacía (opcional) (g)", min_value=0, step=10, format="%d", value=0, key="peso_vacia_g")
                     peso_vacia_kg = peso_vacia_g / 1000
-                    st.caption(f"Bolsa después de infundir ({peso_vacia_g} g = {peso_vacia_kg:.3f} kg)")
+                    st.caption(f"Equivale a {peso_vacia_kg:.3f} kg")
                 with col3:
-                    peso_drenaje_g = st.number_input("Peso bolsa drenaje", min_value=0, step=10, format="%d", value=2200, key="peso_drenaje_g")
+                    peso_drenaje_g = st.number_input("Peso bolsa drenaje (g)", min_value=0, step=10, format="%d", value=2200, key="peso_drenaje_g")
                     peso_drenaje_kg = peso_drenaje_g / 1000
-                    st.caption(f"Bolsa con líquido drenado ({peso_drenaje_g} g = {peso_drenaje_kg:.3f} kg)")
+                    st.caption(f"Equivale a {peso_drenaje_kg:.3f} kg")
             
             # Mostrar volúmenes calculados
             if peso_llena_kg > 0:
@@ -1057,304 +1070,291 @@ if st.session_state.pagina == "modificar":
                 st.session_state.modificar_paso = "seleccionar"
                 st.rerun()
             
-            with st.form("form_modificar_manual"):
-                st.markdown(f"### ✏️ Editando Registro Manual ID: {registro_id}")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    fecha = st.date_input(
-                        "Fecha", 
-                        datetime.strptime(registro['fecha'], '%Y-%m-%d').date(),
-                        format="DD/MM/YYYY"
-                    )
-                with col2:
-                    hora = st.time_input(
-                        "Hora",
-                        datetime.strptime(registro['hora'], '%H:%M:%S').time()
-                    )
-                
-                concentracion = st.selectbox(
-                    "Concentración (Color)",
-                    ["Amarillo", "Verde", "Rojo"],
-                    index=["Amarillo", "Verde", "Rojo"].index(registro['concentracion'])
+            # Inicializar estado para unidad
+            if "unidad_mod_manual" not in st.session_state:
+                st.session_state.unidad_mod_manual = "Kilogramos (kg)"
+            
+            # Mostrar valores actuales
+            st.markdown(f"### ✏️ Editando Registro Manual ID: {registro_id}")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                nueva_fecha = st.date_input(
+                    "Fecha", 
+                    datetime.strptime(registro['fecha'], '%Y-%m-%d').date(),
+                    format="DD/MM/YYYY"
                 )
-                
-                # Selector de unidad de peso
-                unidad_peso = st.radio("Unidad de peso:", ["Kilogramos (kg)", "Gramos (g)"], horizontal=True, key="unidad_mod_manual")
-                
-                st.markdown("#### ⚖️ Pesos")
-                
-                # Valores actuales
-                peso_llena_actual = float(registro['peso_bolsa_llena_kg'])
-                peso_vacia_actual = float(registro['peso_bolsa_vacia_kg'] or 0)
-                peso_drenaje_actual = float(registro['peso_bolsa_drenaje_kg'])
-                
-                # Variables para almacenar valores en kg
-                peso_llena_kg = peso_llena_actual
-                peso_vacia_kg = peso_vacia_actual
-                peso_drenaje_kg = peso_drenaje_actual
-                
+            with col2:
+                nueva_hora = st.time_input(
+                    "Hora",
+                    datetime.strptime(registro['hora'], '%H:%M:%S').time()
+                )
+
+            nueva_concentracion = st.selectbox(
+                "Concentración (Color)",
+                ["Amarillo", "Verde", "Rojo"],
+                index=["Amarillo", "Verde", "Rojo"].index(registro['concentracion'])
+            )
+            
+            # Selector de unidad de peso (AL MISMO NIVEL que selectbox)
+            st.session_state.unidad_mod_manual = st.radio(
+                "Unidad de peso:",
+                ["Kilogramos (kg)", "Gramos (g)"],
+                horizontal=True,
+                key="unidad_selector_mod"
+            )
+            
+            # Valores actuales (AL MISMO NIVEL)
+            peso_llena_actual = float(registro['peso_bolsa_llena_kg'])
+            peso_vacia_actual = float(registro['peso_bolsa_vacia_kg'] or 0)
+            peso_drenaje_actual = float(registro['peso_bolsa_drenaje_kg'])
+            
+            # Variables para almacenar valores modificados
+            peso_llena_kg = peso_llena_actual
+            peso_vacia_kg = peso_vacia_actual
+            peso_drenaje_kg = peso_drenaje_actual
+            
+            # Mostrar campos según unidad
+            if st.session_state.unidad_mod_manual == "Kilogramos (kg)":
+                st.markdown("#### ⚖️ Pesos (en kilogramos)")
                 col1, col2, col3 = st.columns(3)
-                
-                if unidad_peso == "Kilogramos (kg)":
-                    with col1:
-                        peso_llena = st.number_input(
-                            "Peso bolsa llena (infusión)",
-                            min_value=0.0, step=0.1, format="%.3f",
-                            value=peso_llena_actual,
-                            key="mod_peso_llena_kg"
-                        )
-                        peso_llena_kg = peso_llena
-                        st.caption(f"Actual: {peso_llena_actual:.3f} kg")
-                    with col2:
-                        peso_vacia = st.number_input(
-                            "Peso bolsa vacía (opcional)",
-                            min_value=0.0, step=0.1, format="%.3f",
-                            value=peso_vacia_actual,
-                            key="mod_peso_vacia_kg"
-                        )
-                        peso_vacia_kg = peso_vacia
-                        st.caption(f"Actual: {peso_vacia_actual:.3f} kg")
-                    with col3:
-                        peso_drenaje = st.number_input(
-                            "Peso bolsa drenaje",
-                            min_value=0.0, step=0.1, format="%.3f",
-                            value=peso_drenaje_actual,
-                            key="mod_peso_drenaje_kg"
-                        )
-                        peso_drenaje_kg = peso_drenaje
-                        st.caption(f"Actual: {peso_drenaje_actual:.3f} kg")
-                else:  # Gramos
-                    with col1:
-                        peso_llena_g = st.number_input(
-                            "Peso bolsa llena (infusión) (g)",
-                            min_value=0, step=10, format="%d",
-                            value=int(peso_llena_actual * 1000),
-                            key="mod_peso_llena_g"
-                        )
-                        peso_llena_kg = peso_llena_g / 1000
-                        st.caption(f"Actual: {int(peso_llena_actual * 1000)} g = {peso_llena_actual:.3f} kg")
-                    with col2:
-                        peso_vacia_g = st.number_input(
-                            "Peso bolsa vacía (opcional) (g)",
-                            min_value=0, step=10, format="%d",
-                            value=int(peso_vacia_actual * 1000),
-                            key="mod_peso_vacia_g"
-                        )
-                        peso_vacia_kg = peso_vacia_g / 1000
-                        st.caption(f"Actual: {int(peso_vacia_actual * 1000)} g = {peso_vacia_actual:.3f} kg")
-                    with col3:
-                        peso_drenaje_g = st.number_input(
-                            "Peso bolsa drenaje (g)",
-                            min_value=0, step=10, format="%d",
-                            value=int(peso_drenaje_actual * 1000),
-                            key="mod_peso_drenaje_g"
-                        )
-                        peso_drenaje_kg = peso_drenaje_g / 1000
-                        st.caption(f"Actual: {int(peso_drenaje_actual * 1000)} g = {peso_drenaje_actual:.3f} kg")
-                
-                # Botón para actualizar vista previa (fuera del submit del formulario principal)
-                col1, col2 = st.columns(2)
                 with col1:
-                    actualizar_vista = st.button("🔄 Actualizar vista previa", use_container_width=True)
-                
-                # Mostrar volúmenes calculados (se actualizan con el botón o al cambiar valores)
-                vol_infundido = (peso_llena_kg - peso_vacia_kg) * 1000
-                vol_drenado = peso_drenaje_kg * 1000
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    delta_inf = vol_infundido - (registro.get('volumen_infundido_ml', 0) or 0)
-                    st.metric(
-                        "Volumen infundido",
-                        f"{vol_infundido:.0f} ml",
-                        delta=f"{delta_inf:.0f}"
+                    peso_llena = st.number_input(
+                        "Peso bolsa llena (infusión)",
+                        min_value=0.0, step=0.1, format="%.3f",
+                        value=peso_llena_actual,
+                        key="mod_peso_llena_kg"
                     )
+                    peso_llena_kg = peso_llena
+                    st.caption(f"Actual: {peso_llena_actual:.3f} kg")
                 with col2:
-                    delta_dren = vol_drenado - (registro.get('volumen_drenado_ml', 0) or 0)
-                    st.metric(
-                        "Volumen drenado",
-                        f"{vol_drenado:.0f} ml",
-                        delta=f"{delta_dren:.0f}"
+                    peso_vacia = st.number_input(
+                        "Peso bolsa vacía (opcional)",
+                        min_value=0.0, step=0.1, format="%.3f",
+                        value=peso_vacia_actual,
+                        key="mod_peso_vacia_kg"
                     )
-                
-                observaciones = st.text_area(
-                    "📝 Observaciones",
-                    value=registro.get('observaciones', '')
+                    peso_vacia_kg = peso_vacia
+                    st.caption(f"Actual: {peso_vacia_actual:.3f} kg")
+                with col3:
+                    peso_drenaje = st.number_input(
+                        "Peso bolsa drenaje",
+                        min_value=0.0, step=0.1, format="%.3f",
+                        value=peso_drenaje_actual,
+                        key="mod_peso_drenaje_kg"
+                    )
+                    peso_drenaje_kg = peso_drenaje
+                    st.caption(f"Actual: {peso_drenaje_actual:.3f} kg")
+            else:  # Gramos
+                st.markdown("#### ⚖️ Pesos (en gramos)")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    peso_llena_g = st.number_input(
+                        "Peso bolsa llena (infusión) (g)",
+                        min_value=0, step=10, format="%d",
+                        value=int(peso_llena_actual * 1000),
+                        key="mod_peso_llena_g"
+                    )
+                    peso_llena_kg = peso_llena_g / 1000
+                    st.caption(f"Actual: {int(peso_llena_actual * 1000)} g = {peso_llena_actual:.3f} kg")
+                with col2:
+                    peso_vacia_g = st.number_input(
+                        "Peso bolsa vacía (opcional) (g)",
+                        min_value=0, step=10, format="%d",
+                        value=int(peso_vacia_actual * 1000),
+                        key="mod_peso_vacia_g"
+                    )
+                    peso_vacia_kg = peso_vacia_g / 1000
+                    st.caption(f"Actual: {int(peso_vacia_actual * 1000)} g = {peso_vacia_actual:.3f} kg")
+                with col3:
+                    peso_drenaje_g = st.number_input(
+                        "Peso bolsa drenaje (g)",
+                        min_value=0, step=10, format="%d",
+                        value=int(peso_drenaje_actual * 1000),
+                        key="mod_peso_drenaje_g"
+                    )
+                    peso_drenaje_kg = peso_drenaje_g / 1000
+                    st.caption(f"Actual: {int(peso_drenaje_actual * 1000)} g = {peso_drenaje_actual:.3f} kg")
+            
+            # Mostrar volúmenes calculados (se actualizan en tiempo real)
+            vol_infundido = (peso_llena_kg - peso_vacia_kg) * 1000
+            vol_drenado = peso_drenaje_kg * 1000
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                delta_inf = vol_infundido - (registro.get('volumen_infundido_ml', 0) or 0)
+                st.metric(
+                    "Volumen infundido",
+                    f"{vol_infundido:.0f} ml",
+                    delta=f"{delta_inf:.0f}"
                 )
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.form_submit_button("💾 GUARDAR CAMBIOS", use_container_width=True):
-                        # Obtener último registro manual para recalcular balance
-                        ultimo = db.get_ultimo_registro_manual()
-                        
-                        # Calcular balance
-                        if ultimo and ultimo['id'] != registro_id:
-                            balance = (peso_drenaje_kg * 1000) - ultimo.get('volumen_infundido_ml', 0)
-                        else:
-                            balance = (peso_drenaje_kg * 1000) - (peso_llena_kg - peso_vacia_kg) * 1000
-                        
-                        datos_actualizados = {
-                            'fecha': fecha.strftime("%Y-%m-%d"),
-                            'hora': hora.strftime("%H:%M:%S"),
-                            'concentracion': concentracion,
-                            'peso_bolsa_llena_kg': peso_llena_kg,
-                            'peso_bolsa_vacia_kg': peso_vacia_kg,
-                            'peso_bolsa_drenaje_kg': peso_drenaje_kg,
-                            'balance_ml': balance,
-                            'observaciones': observaciones
-                        }
-                        
-                        try:
-                            resultado = db.update_registro_manual(registro_id, datos_actualizados)
-                            if resultado:
-                                st.success("✅ Registro modificado correctamente")
-                                st.balloons()
-                                st.session_state.modificar_paso = "seleccionar"
-                                st.session_state.pagina = "principal"
-                                st.rerun()
-                            else:
-                                st.error("No se pudo actualizar el registro")
-                        except Exception as e:
-                            st.error(f"Error: {e}")
-                
-                with col2:
-                    if st.form_submit_button("Cancelar", use_container_width=True):
-                        st.session_state.modificar_paso = "seleccionar"
-                        st.rerun()
-        
-        else:  # Cicladora
-            with st.form("form_cicladora"):
-                st.markdown("### 🤖 Diálisis con Cicladora")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
-                    hora_inicio = st.time_input("Hora inicio", datetime.now(BAIRES_TZ).time())
-                with col2:
-                    hora_fin = st.time_input("Hora fin", (datetime.now(BAIRES_TZ) + timedelta(hours=8)).time())
-                
-                st.markdown("#### 🧴 Bolsas utilizadas")
-                st.info("La cicladora puede usar 1 o 2 bolsas. Si usas 2, pueden ser del mismo color o diferentes.")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.markdown("**Bolsa 1 (superior - calentada)**")
-                    conc1 = st.selectbox("Color bolsa 1", ["Amarillo", "Verde", "Rojo"], key="conc1")
-                    vol1 = st.number_input("Volumen bolsa 1 (ml)", min_value=0, step=100, value=2000, key="vol1")
-                
-                with col2:
-                    st.markdown("**Bolsa 2 (opcional)**")
-                    usar_bolsa2 = st.checkbox("Usar segunda bolsa", value=False)
-                    if usar_bolsa2:
-                        conc2 = st.selectbox("Color bolsa 2", ["Amarillo", "Verde", "Rojo"], key="conc2")
-                        vol2 = st.number_input("Volumen bolsa 2 (ml)", min_value=0, step=100, value=2000, key="vol2")
+            with col2:
+                delta_dren = vol_drenado - (registro.get('volumen_drenado_ml', 0) or 0)
+                st.metric(
+                    "Volumen drenado",
+                    f"{vol_drenado:.0f} ml",
+                    delta=f"{delta_dren:.0f}"
+                )
+            
+            observaciones = st.text_area(
+                "📝 Observaciones",
+                value=registro.get('observaciones', '')
+            )
+            
+            # Botones de acción
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
+                    # Obtener último registro manual para recalcular balance
+                    ultimo = db.get_ultimo_registro_manual()
+                    
+                    # Calcular balance
+                    if ultimo and ultimo['id'] != registro_id:
+                        balance = (peso_drenaje_kg * 1000) - ultimo.get('volumen_infundido_ml', 0)
                     else:
-                        conc2 = None
-                        vol2 = 0
-                
-                st.markdown("#### 📊 Datos de la máquina")
-                col1, col2 = st.columns(2)
-                with col1:
-                    drenaje_inicial = st.number_input("Vol. drenaje inicial (ml)", min_value=0, step=50)
-                    uf_total = st.number_input("UF Total (ml)", min_value=0, step=50)
-                    tiempo_permanencia = st.number_input("Tiempo permanencia promedio (min)", min_value=0, step=5)
-                with col2:
-                    tiempo_perdido = st.number_input("Tiempo perdido (min)", min_value=0, step=5)
-                    volumen_solucion = vol1 + (vol2 if usar_bolsa2 else 0)
-                    st.metric("Vol. total solución", f"{volumen_solucion} ml")
-                    num_ciclos = st.number_input("Número de ciclos", min_value=1, step=1, value=4)
-                
-                observaciones = st.text_area("📝 Observaciones")
-                
-                if st.form_submit_button("💾 Guardar Registro Cicladora", use_container_width=True):
-                    datos = {
-                        'fecha': fecha.strftime("%Y-%m-%d"),
-                        'hora_inicio': hora_inicio.strftime("%H:%M:%S"),
-                        'hora_fin': hora_fin.strftime("%H:%M:%S"),
-                        'drenaje_inicial': drenaje_inicial,
-                        'uf_total': uf_total,
-                        'tiempo_permanencia': tiempo_permanencia,
-                        'tiempo_perdido': tiempo_perdido,
-                        'volumen_solucion': volumen_solucion,
-                        'num_ciclos': num_ciclos,
-                        'concentracion1': conc1,
-                        'volumen1': vol1,
-                        'concentracion2': conc2 if usar_bolsa2 else None,
-                        'volumen2': vol2 if usar_bolsa2 else None,
+                        balance = (peso_drenaje_kg * 1000) - (peso_llena_kg - peso_vacia_kg) * 1000
+                    
+                    datos_actualizados = {
+                        'fecha': nueva_fecha.strftime("%Y-%m-%d"),
+                        'hora': nueva_hora.strftime("%H:%M:%S"),
+                        'concentracion': nueva_concentracion,
+                        'peso_bolsa_llena_kg': peso_llena_kg,
+                        'peso_bolsa_vacia_kg': peso_vacia_kg,
+                        'peso_bolsa_drenaje_kg': peso_drenaje_kg,
+                        'balance_ml': balance,
                         'observaciones': observaciones
                     }
+                    
                     try:
-                        db.insert_registro_cicladora(datos)
-                        st.success("✅ Registro de cicladora guardado")
-                        st.balloons()
-                        st.session_state.pagina = "principal"
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error: {e}")
-    
-    # Botón para volver al menú (siempre visible)
-    if st.button("← Volver al menú principal", use_container_width=True):
-        st.session_state.modificar_paso = "seleccionar"
-        st.session_state.pagina = "principal"
-        st.rerun()
-
-# Página: Eliminar Registro
-if st.session_state.pagina == "eliminar":
-    st.markdown("---")
-    st.subheader("🗑️ Eliminar Registro")
-    
-    registros = db.get_registros_fecha("2000-01-01", "2100-01-01")
-    if registros:
-        # Crear opciones para el selector
-        opciones = {}
-        for r in registros[:20]:
-            fecha = r['fecha'][-5:] if r['fecha'] else ''
-            hora = r.get('hora', '')[:5] if r.get('hora') else ''
-            tipo = r['tipo_dialisis']
-            
-            # Calcular UF segun tipo
-            if tipo == 'Cicladora':
-                uf = r.get('uf_total_cicladora_ml', 0) or 0
-            else:
-                uf = r.get('uf_recambio_manual_ml', 0) or 0
-            
-            label = f"ID {r['id']} - {fecha} {hora} - {tipo} - UF: {uf:.0f} ml"
-            opciones[label] = r['id']
-        
-        seleccion = st.selectbox("Selecciona registro a eliminar:", list(opciones.keys()))
-        registro_id = opciones[seleccion]
-        
-        # Mostrar detalles del registro seleccionado
-        st.warning(f"¿Estas seguro de eliminar el registro ID {registro_id}?")
-        st.info("⚠️ Esta accion no se puede deshacer")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🗑️ CONFIRMAR ELIMINACION", type="primary", use_container_width=True):
-                try:
-                    # Obtener el registro para saber de qué tabla eliminar
-                    registro_a_eliminar = next((r for r in registros if r['id'] == registro_id), None)
-                    if registro_a_eliminar:
-                        tabla = 'registros_manual' if registro_a_eliminar['tipo_dialisis'] == 'Manual' else 'registros_cicladora'
-                        
-                        # Eliminar de Supabase
-                        response = db.supabase.table(tabla).delete().eq('id', registro_id).execute()
-                        
-                        if response.data:
-                            st.success(f"✅ Registro ID {registro_id} eliminado correctamente")
+                        resultado = db.update_registro_manual(registro_id, datos_actualizados)
+                        if resultado:
+                            st.success("✅ Registro modificado correctamente")
                             st.balloons()
+                            st.session_state.modificar_paso = "seleccionar"
                             st.session_state.pagina = "principal"
                             st.rerun()
                         else:
-                            st.error("No se pudo eliminar el registro")
-                except Exception as e:
-                    st.error(f"Error al eliminar: {e}")
-        with col2:
-            if st.button("Cancelar", use_container_width=True):
-                st.session_state.pagina = "principal"
+                            st.error("No se pudo actualizar el registro")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+            
+            with col2:
+                if st.button("Cancelar", use_container_width=True):
+                    st.session_state.modificar_paso = "seleccionar"
+                    st.rerun()
+        
+        else:  # Cicladora
+            # Obtener datos del registro de cicladora
+            registro = db.get_registro_cicladora_by_id(registro_id)
+            if not registro:
+                st.error("No se encontró el registro")
+                st.session_state.modificar_paso = "seleccionar"
                 st.rerun()
+            
+            st.markdown(f"### ✏️ Editando Registro Cicladora ID: {registro_id}")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                nueva_fecha = st.date_input(
+                    "Fecha",
+                    datetime.strptime(registro['fecha'], '%Y-%m-%d').date(),
+                    format="DD/MM/YYYY"
+                )
+            with col2:
+                hora_inicio = st.time_input(
+                    "Hora inicio",
+                    datetime.strptime(registro['hora_inicio'], '%H:%M:%S').time()
+                )
+                hora_fin = st.time_input(
+                    "Hora fin",
+                    datetime.strptime(registro['hora_fin'], '%H:%M:%S').time()
+                )
+            
+            st.markdown("#### 🧴 BOLSAS UTILIZADAS")
+            col1, col2 = st.columns(2)
+            with col1:
+                conc1 = st.selectbox(
+                    "Color Bolsa 1",
+                    ["Amarillo", "Verde", "Rojo"],
+                    index=["Amarillo", "Verde", "Rojo"].index(registro.get('concentracion_bolsa1', 'Amarillo'))
+                )
+            with col2:
+                conc2 = st.selectbox(
+                    "Color Bolsa 2",
+                    ["Amarillo", "Verde", "Rojo"],
+                    index=["Amarillo", "Verde", "Rojo"].index(registro.get('concentracion_bolsa2', 'Amarillo'))
+                )
+            
+            st.markdown("#### 📊 DATOS DE LA MÁQUINA")
+            col1, col2 = st.columns(2)
+            with col1:
+                drenaje_inicial = st.number_input(
+                    "Drenaje inicial (ml)",
+                    min_value=0, step=50,
+                    value=registro.get('vol_drenaje_inicial_ml', 0)
+                )
+                uf_total = st.number_input(
+                    "UF Total (ml)",
+                    min_value=0, step=50,
+                    value=registro.get('uf_total_cicladora_ml', 0)
+                )
+                tiempo_permanencia = st.number_input(
+                    "Tiempo permanencia promedio (min)",
+                    min_value=0, step=5,
+                    value=registro.get('tiempo_permanencia_promedio_min', 0)
+                )
+            with col2:
+                tiempo_perdido = st.number_input(
+                    "Tiempo perdido (min)",
+                    min_value=0, step=5,
+                    value=registro.get('tiempo_perdido_min', 0)
+                )
+                num_ciclos = st.number_input(
+                    "Número de ciclos",
+                    min_value=1, step=1,
+                    value=registro.get('numero_ciclos_completados', 4)
+                )
+            
+            observaciones = st.text_area(
+                "📝 Observaciones",
+                value=registro.get('observaciones', '')
+            )
+            
+            # Botones de acción
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
+                    datos_actualizados = {
+                        'fecha': nueva_fecha.strftime("%Y-%m-%d"),
+                        'hora_inicio': hora_inicio.strftime("%H:%M:%S"),
+                        'hora_fin': hora_fin.strftime("%H:%M:%S"),
+                        'vol_drenaje_inicial_ml': drenaje_inicial,
+                        'uf_total_cicladora_ml': uf_total,
+                        'tiempo_permanencia_promedio_min': tiempo_permanencia,
+                        'tiempo_perdido_min': tiempo_perdido,
+                        'numero_ciclos_completados': num_ciclos,
+                        'concentracion_bolsa1': conc1,
+                        'concentracion_bolsa2': conc2,
+                        'observaciones': observaciones
+                    }
+                    
+                    try:
+                        resultado = db.update_registro_cicladora(registro_id, datos_actualizados)
+                        if resultado:
+                            st.success("✅ Registro modificado correctamente")
+                            st.balloons()
+                            st.session_state.modificar_paso = "seleccionar"
+                            st.session_state.pagina = "principal"
+                            st.rerun()
+                        else:
+                            st.error("No se pudo actualizar el registro")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+            
+            with col2:
+                if st.button("Cancelar", use_container_width=True):
+                    st.session_state.modificar_paso = "seleccionar"
+                    st.rerun()
     else:
         st.info("No hay registros para eliminar")
         if st.button("← Volver al menu"):

@@ -50,20 +50,20 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
         pdf.set_font('Arial', 'B', 11)
         pdf.cell(0, 7, 'Datos Generales:', 0, 1)
         pdf.set_font('Arial', '', 10)
-        pdf.cell(0, 6, f'   • Dias con tratamiento: {estadisticas.get("total_dias", 0)}', 0, 1)
-        pdf.cell(0, 6, f'   • Total de registros: {estadisticas.get("total_registros", 0)}', 0, 1)
-        pdf.cell(0, 6, f'   • Registros manuales: {estadisticas.get("total_manuales", 0)}', 0, 1)
-        pdf.cell(0, 6, f'   • Registros cicladora: {estadisticas.get("total_cicladoras", 0)}', 0, 1)
+        pdf.cell(0, 6, f'   - Dias con tratamiento: {estadisticas.get("total_dias", 0)}', 0, 1)
+        pdf.cell(0, 6, f'   - Total de registros: {estadisticas.get("total_registros", 0)}', 0, 1)
+        pdf.cell(0, 6, f'   - Registros manuales: {estadisticas.get("total_manuales", 0)}', 0, 1)
+        pdf.cell(0, 6, f'   - Registros cicladora: {estadisticas.get("total_cicladoras", 0)}', 0, 1)
         pdf.ln(3)
         
         # Analisis de UF
         pdf.set_font('Arial', 'B', 11)
         pdf.cell(0, 7, 'Analisis de Ultrafiltracion (UF):', 0, 1)
         pdf.set_font('Arial', '', 10)
-        pdf.cell(0, 6, f'   • UF Total del periodo: {estadisticas.get("uf_total_periodo", 0):.0f} ml', 0, 1)
-        pdf.cell(0, 6, f'   • UF Promedio por dia: {estadisticas.get("uf_promedio_dia", 0):.0f} ml', 0, 1)
-        pdf.cell(0, 6, f'   • Valor maximo: {estadisticas.get("uf_max", 0):.0f} ml', 0, 1)
-        pdf.cell(0, 6, f'   • Valor minimo: {estadisticas.get("uf_min", 0):.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   - UF Total del periodo: {estadisticas.get("uf_total_periodo", 0):.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   - UF Promedio por dia: {estadisticas.get("uf_promedio_dia", 0):.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   - Valor maximo: {estadisticas.get("uf_max", 0):.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   - Valor minimo: {estadisticas.get("uf_min", 0):.0f} ml', 0, 1)
         pdf.ln(3)
         
         # Alertas clinicas
@@ -74,12 +74,12 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
         dias_negativos = estadisticas.get("dias_con_uf_negativa", 0)
         if dias_negativos > 0:
             pdf.set_text_color(255, 0, 0)
-            pdf.cell(0, 6, f'   • ATENCION: Dias con UF negativa: {dias_negativos}', 0, 1)
+            pdf.cell(0, 6, f'   - ATENCION: Dias con UF negativa: {dias_negativos}', 0, 1)
             pdf.set_text_color(0, 0, 0)
         else:
-            pdf.cell(0, 6, f'   • Dias con UF negativa: 0', 0, 1)
+            pdf.cell(0, 6, f'   - Dias con UF negativa: 0', 0, 1)
         
-        pdf.cell(0, 6, f'   • Dias con UF positiva: {estadisticas.get("dias_con_uf_positiva", 0)}', 0, 1)
+        pdf.cell(0, 6, f'   - Dias con UF positiva: {estadisticas.get("dias_con_uf_positiva", 0)}', 0, 1)
         pdf.ln(5)
         
         # Tabla de resumen diario

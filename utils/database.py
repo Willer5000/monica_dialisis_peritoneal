@@ -3,6 +3,7 @@ from supabase import create_client, Client
 from datetime import datetime, timedelta
 import pytz
 from dotenv import load_dotenv
+import pandas as pd
 
 load_dotenv()
 
@@ -111,15 +112,13 @@ class Database:
         return response.data
     
     def get_estadisticas_periodo(self, fecha_inicio, fecha_fin):
-        """Calcular estadísticas completas (igual que antes pero con nuevos campos)"""
+        """Calcular estadísticas completas"""
         registros = self.get_registros_fecha(fecha_inicio, fecha_fin)
         
         if not registros:
             return None
         
-        df_raw = pd.DataFrame(registros)
-        
-        # Agrupar por día
+        # Agrupar por día manualmente (sin pandas)
         dias = {}
         for reg in registros:
             fecha = reg['fecha']
@@ -132,17 +131,19 @@ class Database:
                 }
             
             if reg['tipo_dialisis'] == 'Cicladora':
-                dias[fecha]['uf_cicladora'] += reg.get('uf_total_cicladora_ml', 0)
+                dias[fecha]['uf_cicladora'] += reg.get('uf_total_cicladora_ml', 0) or 0
                 dias[fecha]['num_cicladoras'] += 1
             else:
-                dias[fecha]['uf_manual'] += reg.get('uf_recambio_manual_ml', 0)
+                dias[fecha]['uf_manual'] += reg.get('uf_recambio_manual_ml', 0) or 0
                 dias[fecha]['num_manuales'] += 1
         
         # Calcular totales por día
         uf_por_dia = []
+        fechas_lista = []
         for fecha, datos in dias.items():
-            total_uf = datos['uf_cicladora'] + datos['uf_manual']
+            total_uf = (datos['uf_cicladora'] or 0) + (datos['uf_manual'] or 0)
             uf_por_dia.append(total_uf)
+            fechas_lista.append(fecha)
         
         return {
             'total_dias': len(dias),
@@ -157,5 +158,5 @@ class Database:
             'uf_min': min(uf_por_dia) if uf_por_dia else 0,
             'dias': dias,
             'uf_por_dia': uf_por_dia,
-            'fechas': list(dias.keys())
+            'fechas': fechas_lista
         }

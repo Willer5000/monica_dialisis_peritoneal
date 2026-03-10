@@ -74,13 +74,42 @@ class Database:
     def update_registro_manual(self, registro_id, datos):
         """Actualizar un registro manual"""
         try:
+            # Asegurarse de que los valores son del tipo correcto
+            registro = {
+                'fecha': datos.get('fecha'),
+                'hora': datos.get('hora'),
+                'concentracion': datos.get('concentracion'),
+                'peso_bolsa_llena_kg': float(datos.get('peso_bolsa_llena_kg', 0)),
+                'peso_bolsa_vacia_kg': float(datos.get('peso_bolsa_vacia_kg', 0)),
+                'peso_bolsa_drenaje_kg': float(datos.get('peso_bolsa_drenaje_kg', 0)),
+                'balance_ml': int(datos.get('balance_ml', 0)),
+                'observaciones': datos.get('observaciones', '')
+            }
+            
+            # Filtrar None values
+            registro = {k: v for k, v in registro.items() if v is not None}
+            
+            print(f"Actualizando registro manual {registro_id} con datos: {registro}")
+            
             response = self.supabase.table('registros_manual')\
-                .update(datos)\
+                .update(registro)\
                 .eq('id', registro_id)\
                 .execute()
-            return response.data
+            
+            if response.data:
+                print(f"Registro {registro_id} actualizado correctamente: {response.data}")
+                return response.data
+            else:
+                print(f"No se encontró el registro {registro_id} para actualizar")
+                # Intentar verificar si existe
+                check = self.supabase.table('registros_manual').select('*').eq('id', registro_id).execute()
+                print(f"Verificación - registro existe: {check.data}")
+                return None
+                
         except Exception as e:
             print(f"Error actualizando registro manual: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def update_registro_cicladora(self, registro_id, datos):

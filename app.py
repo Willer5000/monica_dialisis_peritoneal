@@ -659,25 +659,32 @@ if st.session_state.pagina == "modificar":
     if registros:
         # Crear opciones para el selector
         opciones = {}
-        for r in registros[:20]:  # Mostrar últimos 20
+        for r in registros[:20]:
             fecha = r['fecha'][-5:] if r['fecha'] else ''
-            hora = r['hora'][:5] if r.get('hora') else ''
+            hora = r.get('hora', '')[:5] if r.get('hora') else ''
             tipo = r['tipo_dialisis']
-            uf = r.get('uf_recambio_manual_ml') or r.get('uf_total_cicladora_ml') or 0
+            
+            # Calcular UF segun tipo
+            if tipo == 'Cicladora':
+                uf = r.get('uf_total_cicladora_ml', 0) or 0
+            else:
+                uf = r.get('uf_recambio_manual_ml', 0) or 0
+            
             label = f"ID {r['id']} - {fecha} {hora} - {tipo} - UF: {uf:.0f} ml"
             opciones[label] = r['id']
         
         seleccion = st.selectbox("Selecciona registro a modificar:", list(opciones.keys()))
         registro_id = opciones[seleccion]
         
-        st.info(f"Función de modificar en desarrollo - ID seleccionado: {registro_id}")
+        st.info(f"✏️ Funcion de modificar en desarrollo - ID seleccionado: {registro_id}")
+        st.caption("Por ahora puedes eliminar el registro y crear uno nuevo")
         
-        if st.button("← Volver al menú"):
+        if st.button("← Volver al menu"):
             st.session_state.pagina = "principal"
             st.rerun()
     else:
         st.info("No hay registros para modificar")
-        if st.button("← Volver al menú"):
+        if st.button("← Volver al menu"):
             st.session_state.pagina = "principal"
             st.rerun()
 
@@ -690,11 +697,17 @@ if st.session_state.pagina == "eliminar":
     if registros:
         # Crear opciones para el selector
         opciones = {}
-        for r in registros[:20]:  # Mostrar últimos 20
+        for r in registros[:20]:
             fecha = r['fecha'][-5:] if r['fecha'] else ''
-            hora = r['hora'][:5] if r.get('hora') else ''
+            hora = r.get('hora', '')[:5] if r.get('hora') else ''
             tipo = r['tipo_dialisis']
-            uf = r.get('uf_recambio_manual_ml') or r.get('uf_total_cicladora_ml') or 0
+            
+            # Calcular UF segun tipo
+            if tipo == 'Cicladora':
+                uf = r.get('uf_total_cicladora_ml', 0) or 0
+            else:
+                uf = r.get('uf_recambio_manual_ml', 0) or 0
+            
             label = f"ID {r['id']} - {fecha} {hora} - {tipo} - UF: {uf:.0f} ml"
             opciones[label] = r['id']
         
@@ -702,26 +715,44 @@ if st.session_state.pagina == "eliminar":
         registro_id = opciones[seleccion]
         
         # Mostrar detalles del registro seleccionado
-        st.warning(f"¿Estás seguro de eliminar el registro ID {registro_id}?")
+        st.warning(f"¿Estas seguro de eliminar el registro ID {registro_id}?")
+        st.info("⚠️ Esta accion no se puede deshacer")
+        
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🗑️ CONFIRMAR ELIMINACIÓN", type="primary", use_container_width=True):
+            if st.button("🗑️ CONFIRMAR ELIMINACION", type="primary", use_container_width=True):
                 try:
-                    # Aquí irá la función de eliminar cuando la implementemos
-                    st.error("Función de eliminar en desarrollo - Por ahora usa Supabase")
+                    # Obtener el registro para saber de qué tabla eliminar
+                    registro_a_eliminar = next((r for r in registros if r['id'] == registro_id), None)
+                    if registro_a_eliminar:
+                        tabla = 'registros_manual' if registro_a_eliminar['tipo_dialisis'] == 'Manual' else 'registros_cicladora'
+                        
+                        # Eliminar de Supabase
+                        response = db.supabase.table(tabla).delete().eq('id', registro_id).execute()
+                        
+                        if response.data:
+                            st.success(f"✅ Registro ID {registro_id} eliminado correctamente")
+                            st.balloons()
+                            st.session_state.pagina = "principal"
+                            st.rerun()
+                        else:
+                            st.error("No se pudo eliminar el registro")
                 except Exception as e:
-                    st.error(f"Error: {e}")
+                    st.error(f"Error al eliminar: {e}")
         with col2:
             if st.button("Cancelar", use_container_width=True):
                 st.session_state.pagina = "principal"
                 st.rerun()
     else:
         st.info("No hay registros para eliminar")
+        if st.button("← Volver al menu"):
+            st.session_state.pagina = "principal"
+            st.rerun()
     
-    if st.button("← Volver al menú"):
+    if st.button("← Volver al menu"):
         st.session_state.pagina = "principal"
         st.rerun()
-
+        
 # Footer
 st.markdown("---")
 st.markdown("""

@@ -85,57 +85,55 @@ class Database:
         
         return ultimo
     
+    def get_ultima_infusion_manual(self):
+        """Obtener la última infusión manual registrada"""
+        response = self.supabase.table('registros')\
+            .select('*')\
+            .eq('tipo_dialisis', 'Manual')\
+            .order('fecha', desc=True)\
+            .order('hora', desc=True)\
+            .limit(1)\
+            .execute()
+        return response.data[0] if response.data else None    
+    
+    
     def insert_registro(self, datos):
-        """Insertar un nuevo registro con cálculo correcto de UF manual"""
+        """Insertar un nuevo registro con cálculo correcto de UF Manual"""
+        # Asegurar zona horaria Buenos Aires
         ahora = datetime.now(BAIRES_TZ)
         
-        # Obtener el último registro manual anterior para calcular UF correctamente
+        registro = {
+            'fecha': datos.get('fecha', ahora.date().isoformat()),
+            'hora': datos.get('hora', ahora.time().strftime('%H:%M:%S')),
+            'tipo_dialisis': datos['tipo'],
+            'observaciones': datos.get('observaciones', '')
+        }
+        
         if datos['tipo'] == 'Manual':
-            # Buscar el último registro manual para conocer la infusión anterior
-            response_anterior = self.supabase.table('registros')\
-                .select('*')\
-                .eq('tipo_dialisis', 'Manual')\
-                .order('fecha', desc=True)\
-                .order('hora', desc=True)\
-                .limit(1)\
-                .execute()
+            peso_sol = float(datos['peso_solucion'])
+            peso_dren = float(datos['peso_drenaje'])
             
-            peso_sol_actual = float(datos['peso_solucion'])
-            peso_dren_actual = float(datos['peso_drenaje'])
+            # Buscar la última infusión manual para calcular UF correctamente
+            # UF Manual = Drenaje Actual - Infusión Anterior
+            ultima_infusion = self.get_ultima_infusion_manual()
             
-            # Si hay un registro anterior, usamos su peso de solución como referencia
-            if response_anterior.data:
-                registro_anterior = response_anterior.data[0]
-                peso_sol_anterior = float(registro_anterior['peso_bolsa_solucion_kg'] or 0)
-                
-                # Cálculo correcto: DRENAJE ACTUAL - INFUSIÓN ANTERIOR
-                uf_manual = (peso_dren_actual - peso_sol_anterior) * 1000
-                
-                # Guardamos también el método de cálculo para referencia
-                metodo_calculo = f"dren_actual({peso_dren_actual}kg) - sol_anterior({peso_sol_anterior}kg)"
+            if ultima_infusion and ultima_infusion.get('peso_bolsa_solucion_kg'):
+                # Si hay infusión anterior, calcular UF con esa
+                uf_manual = (peso_dren - float(ultima_infusion['peso_bolsa_solucion_kg'])) * 1000
             else:
-                # Si es el primer registro, usamos la solución actual como referencia
-                uf_manual = (peso_dren_actual - peso_sol_actual) * 1000
-                metodo_calculo = f"primer_registro: dren_actual - sol_actual"
+                # Si no hay infusión anterior, usar la solución actual (primer registro del día)
+                uf_manual = (peso_dren - peso_sol) * 1000
             
-            registro = {
-                'fecha': datos.get('fecha', ahora.date().isoformat()),
-                'hora': datos.get('hora', ahora.time().strftime('%H:%M:%S')),
-                'tipo_dialisis': 'Manual',
-                'observaciones': f"{datos.get('observaciones', '')} | Cálculo UF: {metodo_calculo}",
+            registro.update({
                 'color_bolsa': datos['color_bolsa'],
-                'peso_bolsa_solucion_kg': peso_sol_actual,
-                'peso_bolsa_drenaje_kg': peso_dren_actual,
+                'peso_bolsa_solucion_kg': peso_sol,
+                'peso_bolsa_drenaje_kg': peso_dren,
                 'uf_recambio_manual_ml': uf_manual
-            }
-        else:  # Cicladora
-            registro = {
-                'fecha': datos.get('fecha', ahora.date().isoformat()),
-                'hora': datos.get('hora', ahora.time().strftime('%H:%M:%S')),
-                'tipo_dialisis': 'Cicladora',
-                'observaciones': datos.get('observaciones', ''),
+            })
+        else:
+            registro.update({
                 'uf_total_cicladora_ml': int(datos.get('uf_cicladora', 0))
-            }
+            })
         
         response = self.supabase.table('registros').insert(registro).execute()
         

@@ -196,63 +196,82 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
     # GRÁFICOS EN HOJAS SEPARADAS (ANEXOS)
     # ============================================================
     if tipo_informe in ['resumen', 'completo'] and estadisticas:
-        # Gráfico 1 - Evolución
-        pdf.add_page()
-        pdf.set_font('Arial', 'B', 14)
-        pdf.cell(0, 10, 'ANEXO 1 - Evolución de UF Diaria', 0, 1, 'C')
-        pdf.ln(5)
+        # Verificar que hay datos para gráficos
+        if estadisticas.get('fechas') and len(estadisticas['fechas']) > 0:
+            # ANEXO 1 - Evolución
+            pdf.add_page()
+            pdf.set_font('Arial', 'B', 16)
+            pdf.cell(0, 15, 'ANEXO 1 - EVOLUCIÓN DE UF DIARIA', 0, 1, 'C')
+            pdf.ln(5)
+            
+            try:
+                archivo_grafico = generar_grafico_evolucion(
+                    estadisticas['fechas'],
+                    estadisticas['uf_por_dia'],
+                    'Evolución de Ultrafiltración Diaria'
+                )
+                if os.path.exists(archivo_grafico):
+                    pdf.image(archivo_grafico, x=15, y=pdf.get_y(), w=180)
+                    pdf.ln(100)  # Espacio después del gráfico
+                    os.unlink(archivo_grafico)
+            except Exception as e:
+                pdf.set_font('Arial', '', 10)
+                pdf.cell(0, 10, f"Error generando gráfico: {e}", 0, 1)
         
-        if estadisticas.get('fechas') and estadisticas.get('uf_por_dia'):
-            archivo_grafico = generar_grafico_evolucion(
-                estadisticas['fechas'],
-                estadisticas['uf_por_dia'],
-                'Evolución de Ultrafiltración Diaria'
-            )
-            if os.path.exists(archivo_grafico):
-                pdf.image(archivo_grafico, x=10, y=pdf.get_y(), w=190)
-                os.unlink(archivo_grafico)
-        
-        # Gráfico 2 - Comparativa (solo si hay datos)
+        # ANEXO 2 - Comparativa (solo si hay ambos tipos)
         uf_cicladora_por_dia = []
         uf_manual_por_dia = []
         fechas_lista = []
         
+        # Recolectar datos por día
         for fecha, datos in estadisticas['dias'].items():
             fechas_lista.append(fecha)
             uf_cicladora_por_dia.append(datos.get('uf_cicladora', 0))
             uf_manual_por_dia.append(datos.get('uf_manual', 0))
         
-        if any(uf_cicladora_por_dia) and any(uf_manual_por_dia):
+        # Solo crear gráfico si hay datos de ambos tipos
+        if (any(uf_cicladora_por_dia) or any(uf_manual_por_dia)) and len(fechas_lista) > 0:
             pdf.add_page()
-            pdf.set_font('Arial', 'B', 14)
-            pdf.cell(0, 10, 'ANEXO 2 - Comparativa Cicladora vs Manual', 0, 1, 'C')
+            pdf.set_font('Arial', 'B', 16)
+            pdf.cell(0, 15, 'ANEXO 2 - COMPARATIVA CICLADORA VS MANUAL', 0, 1, 'C')
             pdf.ln(5)
             
-            archivo_comparativo = generar_grafico_barras_comparativo(
-                fechas_lista,
-                uf_cicladora_por_dia,
-                uf_manual_por_dia,
-                'Comparativa UF por Tipo'
-            )
-            if os.path.exists(archivo_comparativo):
-                pdf.image(archivo_comparativo, x=10, y=pdf.get_y(), w=190)
-                os.unlink(archivo_comparativo)
+            try:
+                archivo_comparativo = generar_grafico_barras_comparativo(
+                    fechas_lista,
+                    uf_cicladora_por_dia,
+                    uf_manual_por_dia,
+                    'Comparativa UF por Tipo'
+                )
+                if os.path.exists(archivo_comparativo):
+                    pdf.image(archivo_comparativo, x=15, y=pdf.get_y(), w=180)
+                    pdf.ln(100)
+                    os.unlink(archivo_comparativo)
+            except Exception as e:
+                pdf.set_font('Arial', '', 10)
+                pdf.cell(0, 10, f"Error generando gráfico: {e}", 0, 1)
         
-        # Gráfico 3 - Distribución
+        # ANEXO 3 - Distribución
         if estadisticas.get('uf_cicladora_total', 0) > 0 or estadisticas.get('uf_manual_total', 0) > 0:
             pdf.add_page()
-            pdf.set_font('Arial', 'B', 14)
-            pdf.cell(0, 10, 'ANEXO 3 - Distribución de UF', 0, 1, 'C')
+            pdf.set_font('Arial', 'B', 16)
+            pdf.cell(0, 15, 'ANEXO 3 - DISTRIBUCIÓN DE UF', 0, 1, 'C')
             pdf.ln(5)
             
-            archivo_torta = generar_grafico_torta_distribucion(
-                estadisticas.get('uf_manual_total', 0),
-                estadisticas.get('uf_cicladora_total', 0),
-                estadisticas.get('uf_total_periodo', 0)
-            )
-            if os.path.exists(archivo_torta):
-                pdf.image(archivo_torta, x=50, y=pdf.get_y(), w=110)
-                os.unlink(archivo_torta)
+            try:
+                archivo_torta = generar_grafico_torta_distribucion(
+                    estadisticas.get('uf_manual_total', 0),
+                    estadisticas.get('uf_cicladora_total', 0),
+                    estadisticas.get('uf_total_periodo', 0)
+                )
+                if os.path.exists(archivo_torta):
+                    # Centrar la imagen
+                    pdf.image(archivo_torta, x=45, y=pdf.get_y(), w=120)
+                    pdf.ln(80)
+                    os.unlink(archivo_torta)
+            except Exception as e:
+                pdf.set_font('Arial', '', 10)
+                pdf.cell(0, 10, f"Error generando gráfico: {e}", 0, 1)
     
     # ============================================================
     # BASE DE DATOS (registros detallados)

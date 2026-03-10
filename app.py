@@ -474,45 +474,48 @@ if st.session_state.pagina == "nuevo":
             concentracion = st.selectbox("Concentración (Color)", ["Amarillo", "Verde", "Rojo"])
             
             # Selector de unidad de peso
-            unidad_peso = st.radio("Unidad de peso:", ["Kilogramos (kg)", "Gramos (g)"], horizontal=True)
+            unidad_peso = st.radio("Unidad de peso:", ["Kilogramos (kg)", "Gramos (g)"], horizontal=True, key="unidad_manual")
             
             st.markdown("#### ⚖️ Pesos")
             
-            # Factor de conversión: 1 kg = 1000 g
-            factor = 1.0 if unidad_peso == "Kilogramos (kg)" else 0.001  # Si ingresa gramos, convertir a kg
+            # Variable para almacenar valores en kg internamente
+            peso_llena_kg = 0
+            peso_vacia_kg = 0
+            peso_drenaje_kg = 0
             
             col1, col2, col3 = st.columns(3)
-            with col1:
-                if unidad_peso == "Kilogramos (kg)":
-                    peso_llena = st.number_input("Peso bolsa llena (infusión)", min_value=0.0, step=0.1, format="%.3f", value=2.0)
+            
+            if unidad_peso == "Kilogramos (kg)":
+                with col1:
+                    peso_llena = st.number_input("Peso bolsa llena (infusión)", min_value=0.0, step=0.1, format="%.3f", value=2.0, key="peso_llena_kg")
+                    peso_llena_kg = peso_llena
                     st.caption("Bolsa de solución NUEVA (kg)")
-                else:
-                    peso_llena_g = st.number_input("Peso bolsa llena (infusión)", min_value=0, step=10, format="%d", value=2000)
-                    peso_llena = peso_llena_g / 1000
-                    st.caption("Bolsa de solución NUEVA (g)")
-            
-            with col2:
-                if unidad_peso == "Kilogramos (kg)":
-                    peso_vacia = st.number_input("Peso bolsa vacía (opcional)", min_value=0.0, step=0.1, format="%.3f", value=0.0)
+                with col2:
+                    peso_vacia = st.number_input("Peso bolsa vacía (opcional)", min_value=0.0, step=0.1, format="%.3f", value=0.0, key="peso_vacia_kg")
+                    peso_vacia_kg = peso_vacia
                     st.caption("Bolsa después de infundir (kg)")
-                else:
-                    peso_vacia_g = st.number_input("Peso bolsa vacía (opcional)", min_value=0, step=10, format="%d", value=0)
-                    peso_vacia = peso_vacia_g / 1000
-                    st.caption("Bolsa después de infundir (g)")
-            
-            with col3:
-                if unidad_peso == "Kilogramos (kg)":
-                    peso_drenaje = st.number_input("Peso bolsa drenaje", min_value=0.0, step=0.1, format="%.3f", value=2.2)
+                with col3:
+                    peso_drenaje = st.number_input("Peso bolsa drenaje", min_value=0.0, step=0.1, format="%.3f", value=2.2, key="peso_drenaje_kg")
+                    peso_drenaje_kg = peso_drenaje
                     st.caption("Bolsa con líquido drenado (kg)")
-                else:
-                    peso_drenaje_g = st.number_input("Peso bolsa drenaje", min_value=0, step=10, format="%d", value=2200)
-                    peso_drenaje = peso_drenaje_g / 1000
-                    st.caption("Bolsa con líquido drenado (g)")
+            else:  # Gramos
+                with col1:
+                    peso_llena_g = st.number_input("Peso bolsa llena (infusión)", min_value=0, step=10, format="%d", value=2000, key="peso_llena_g")
+                    peso_llena_kg = peso_llena_g / 1000
+                    st.caption(f"Bolsa de solución NUEVA ({peso_llena_g} g = {peso_llena_kg:.3f} kg)")
+                with col2:
+                    peso_vacia_g = st.number_input("Peso bolsa vacía (opcional)", min_value=0, step=10, format="%d", value=0, key="peso_vacia_g")
+                    peso_vacia_kg = peso_vacia_g / 1000
+                    st.caption(f"Bolsa después de infundir ({peso_vacia_g} g = {peso_vacia_kg:.3f} kg)")
+                with col3:
+                    peso_drenaje_g = st.number_input("Peso bolsa drenaje", min_value=0, step=10, format="%d", value=2200, key="peso_drenaje_g")
+                    peso_drenaje_kg = peso_drenaje_g / 1000
+                    st.caption(f"Bolsa con líquido drenado ({peso_drenaje_g} g = {peso_drenaje_kg:.3f} kg)")
             
             # Mostrar volúmenes calculados
-            if peso_llena > 0:
-                vol_infundido = (peso_llena - peso_vacia) * 1000
-                vol_drenado = peso_drenaje * 1000
+            if peso_llena_kg > 0:
+                vol_infundido = (peso_llena_kg - peso_vacia_kg) * 1000
+                vol_drenado = peso_drenaje_kg * 1000
                 
                 col1, col2 = st.columns(2)
                 with col1:
@@ -527,9 +530,9 @@ if st.session_state.pagina == "nuevo":
                     'fecha': fecha.strftime("%Y-%m-%d"),
                     'hora': hora.strftime("%H:%M:%S"),
                     'concentracion': concentracion,
-                    'peso_llena': peso_llena,
-                    'peso_vacia': peso_vacia,
-                    'peso_drenaje': peso_drenaje,
+                    'peso_llena': peso_llena_kg,
+                    'peso_vacia': peso_vacia_kg,
+                    'peso_drenaje': peso_drenaje_kg,
                     'observaciones': observaciones
                 }
                 try:
@@ -1076,90 +1079,104 @@ if st.session_state.pagina == "modificar":
                     index=["Amarillo", "Verde", "Rojo"].index(registro['concentracion'])
                 )
                 
-                # Unidad de peso (recordar preferencia)
-                unidad_peso = st.radio(
-                    "Unidad de peso:",
-                    ["Kilogramos (kg)", "Gramos (g)"],
-                    horizontal=True
-                )
+                # Selector de unidad de peso
+                unidad_peso = st.radio("Unidad de peso:", ["Kilogramos (kg)", "Gramos (g)"], horizontal=True, key="unidad_mod_manual")
                 
                 st.markdown("#### ⚖️ Pesos")
                 
-                # Mostrar valores actuales
+                # Valores actuales
                 peso_llena_actual = float(registro['peso_bolsa_llena_kg'])
                 peso_vacia_actual = float(registro['peso_bolsa_vacia_kg'] or 0)
                 peso_drenaje_actual = float(registro['peso_bolsa_drenaje_kg'])
                 
+                # Variables para almacenar valores en kg
+                peso_llena_kg = peso_llena_actual
+                peso_vacia_kg = peso_vacia_actual
+                peso_drenaje_kg = peso_drenaje_actual
+                
                 col1, col2, col3 = st.columns(3)
-                with col1:
-                    if unidad_peso == "Kilogramos (kg)":
+                
+                if unidad_peso == "Kilogramos (kg)":
+                    with col1:
                         peso_llena = st.number_input(
                             "Peso bolsa llena (infusión)",
                             min_value=0.0, step=0.1, format="%.3f",
-                            value=peso_llena_actual
+                            value=peso_llena_actual,
+                            key="mod_peso_llena_kg"
                         )
+                        peso_llena_kg = peso_llena
                         st.caption(f"Actual: {peso_llena_actual:.3f} kg")
-                    else:
-                        peso_llena_g = st.number_input(
-                            "Peso bolsa llena (infusión)",
-                            min_value=0, step=10, format="%d",
-                            value=int(peso_llena_actual * 1000)
-                        )
-                        peso_llena = peso_llena_g / 1000
-                        st.caption(f"Actual: {int(peso_llena_actual * 1000)} g")
-                
-                with col2:
-                    if unidad_peso == "Kilogramos (kg)":
+                    with col2:
                         peso_vacia = st.number_input(
                             "Peso bolsa vacía (opcional)",
                             min_value=0.0, step=0.1, format="%.3f",
-                            value=peso_vacia_actual
+                            value=peso_vacia_actual,
+                            key="mod_peso_vacia_kg"
                         )
+                        peso_vacia_kg = peso_vacia
                         st.caption(f"Actual: {peso_vacia_actual:.3f} kg")
-                    else:
-                        peso_vacia_g = st.number_input(
-                            "Peso bolsa vacía (opcional)",
-                            min_value=0, step=10, format="%d",
-                            value=int(peso_vacia_actual * 1000)
-                        )
-                        peso_vacia = peso_vacia_g / 1000
-                        st.caption(f"Actual: {int(peso_vacia_actual * 1000)} g")
-                
-                with col3:
-                    if unidad_peso == "Kilogramos (kg)":
+                    with col3:
                         peso_drenaje = st.number_input(
                             "Peso bolsa drenaje",
                             min_value=0.0, step=0.1, format="%.3f",
-                            value=peso_drenaje_actual
+                            value=peso_drenaje_actual,
+                            key="mod_peso_drenaje_kg"
                         )
+                        peso_drenaje_kg = peso_drenaje
                         st.caption(f"Actual: {peso_drenaje_actual:.3f} kg")
-                    else:
-                        peso_drenaje_g = st.number_input(
-                            "Peso bolsa drenaje",
-                            min_value=0, step=10, format="%d",
-                            value=int(peso_drenaje_actual * 1000)
-                        )
-                        peso_drenaje = peso_drenaje_g / 1000
-                        st.caption(f"Actual: {int(peso_drenaje_actual * 1000)} g")
-                
-                # Mostrar volúmenes calculados
-                if peso_llena > 0:
-                    vol_infundido = (peso_llena - peso_vacia) * 1000
-                    vol_drenado = peso_drenaje * 1000
-                    
-                    col1, col2 = st.columns(2)
+                else:  # Gramos
                     with col1:
-                        st.metric(
-                            "Volumen infundido",
-                            f"{vol_infundido:.0f} ml",
-                            delta=f"{vol_infundido - (registro['volumen_infundido_ml'] or 0):.0f}"
+                        peso_llena_g = st.number_input(
+                            "Peso bolsa llena (infusión) (g)",
+                            min_value=0, step=10, format="%d",
+                            value=int(peso_llena_actual * 1000),
+                            key="mod_peso_llena_g"
                         )
+                        peso_llena_kg = peso_llena_g / 1000
+                        st.caption(f"Actual: {int(peso_llena_actual * 1000)} g = {peso_llena_actual:.3f} kg")
                     with col2:
-                        st.metric(
-                            "Volumen drenado",
-                            f"{vol_drenado:.0f} ml",
-                            delta=f"{vol_drenado - (registro['volumen_drenado_ml'] or 0):.0f}"
+                        peso_vacia_g = st.number_input(
+                            "Peso bolsa vacía (opcional) (g)",
+                            min_value=0, step=10, format="%d",
+                            value=int(peso_vacia_actual * 1000),
+                            key="mod_peso_vacia_g"
                         )
+                        peso_vacia_kg = peso_vacia_g / 1000
+                        st.caption(f"Actual: {int(peso_vacia_actual * 1000)} g = {peso_vacia_actual:.3f} kg")
+                    with col3:
+                        peso_drenaje_g = st.number_input(
+                            "Peso bolsa drenaje (g)",
+                            min_value=0, step=10, format="%d",
+                            value=int(peso_drenaje_actual * 1000),
+                            key="mod_peso_drenaje_g"
+                        )
+                        peso_drenaje_kg = peso_drenaje_g / 1000
+                        st.caption(f"Actual: {int(peso_drenaje_actual * 1000)} g = {peso_drenaje_actual:.3f} kg")
+                
+                # Botón para actualizar vista previa (fuera del submit del formulario principal)
+                col1, col2 = st.columns(2)
+                with col1:
+                    actualizar_vista = st.button("🔄 Actualizar vista previa", use_container_width=True)
+                
+                # Mostrar volúmenes calculados (se actualizan con el botón o al cambiar valores)
+                vol_infundido = (peso_llena_kg - peso_vacia_kg) * 1000
+                vol_drenado = peso_drenaje_kg * 1000
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    delta_inf = vol_infundido - (registro.get('volumen_infundido_ml', 0) or 0)
+                    st.metric(
+                        "Volumen infundido",
+                        f"{vol_infundido:.0f} ml",
+                        delta=f"{delta_inf:.0f}"
+                    )
+                with col2:
+                    delta_dren = vol_drenado - (registro.get('volumen_drenado_ml', 0) or 0)
+                    st.metric(
+                        "Volumen drenado",
+                        f"{vol_drenado:.0f} ml",
+                        delta=f"{delta_dren:.0f}"
+                    )
                 
                 observaciones = st.text_area(
                     "📝 Observaciones",
@@ -1172,19 +1189,19 @@ if st.session_state.pagina == "modificar":
                         # Obtener último registro manual para recalcular balance
                         ultimo = db.get_ultimo_registro_manual()
                         
-                        # Calcular balance (usando el último registro como referencia)
+                        # Calcular balance
                         if ultimo and ultimo['id'] != registro_id:
-                            balance = (peso_drenaje * 1000) - ultimo.get('volumen_infundido_ml', 0)
+                            balance = (peso_drenaje_kg * 1000) - ultimo.get('volumen_infundido_ml', 0)
                         else:
-                            balance = (peso_drenaje * 1000) - (peso_llena - peso_vacia) * 1000
+                            balance = (peso_drenaje_kg * 1000) - (peso_llena_kg - peso_vacia_kg) * 1000
                         
                         datos_actualizados = {
                             'fecha': fecha.strftime("%Y-%m-%d"),
                             'hora': hora.strftime("%H:%M:%S"),
                             'concentracion': concentracion,
-                            'peso_bolsa_llena_kg': peso_llena,
-                            'peso_bolsa_vacia_kg': peso_vacia,
-                            'peso_bolsa_drenaje_kg': peso_drenaje,
+                            'peso_bolsa_llena_kg': peso_llena_kg,
+                            'peso_bolsa_vacia_kg': peso_vacia_kg,
+                            'peso_bolsa_drenaje_kg': peso_drenaje_kg,
                             'balance_ml': balance,
                             'observaciones': observaciones
                         }

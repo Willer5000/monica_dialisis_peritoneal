@@ -650,35 +650,77 @@ if st.session_state.pagina == "peso":
 
 
 
-# Página: Modificar
+# Página: Modificar Registro
 if st.session_state.pagina == "modificar":
     st.markdown("---")
     st.subheader("✏️ Modificar Registro")
-    st.warning("Funcionalidad en desarrollo - Por ahora elimina y crea uno nuevo")
-    if st.button("← Volver al menú"):
-        st.session_state.pagina = "principal"
-        st.rerun()
+    
+    registros = db.get_registros_fecha("2000-01-01", "2100-01-01")
+    if registros:
+        # Crear opciones para el selector
+        opciones = {}
+        for r in registros[:20]:  # Mostrar últimos 20
+            fecha = r['fecha'][-5:] if r['fecha'] else ''
+            hora = r['hora'][:5] if r.get('hora') else ''
+            tipo = r['tipo_dialisis']
+            uf = r.get('uf_recambio_manual_ml') or r.get('uf_total_cicladora_ml') or 0
+            label = f"ID {r['id']} - {fecha} {hora} - {tipo} - UF: {uf:.0f} ml"
+            opciones[label] = r['id']
+        
+        seleccion = st.selectbox("Selecciona registro a modificar:", list(opciones.keys()))
+        registro_id = opciones[seleccion]
+        
+        st.info(f"Función de modificar en desarrollo - ID seleccionado: {registro_id}")
+        
+        if st.button("← Volver al menú"):
+            st.session_state.pagina = "principal"
+            st.rerun()
+    else:
+        st.info("No hay registros para modificar")
+        if st.button("← Volver al menú"):
+            st.session_state.pagina = "principal"
+            st.rerun()
 
-# Página: Eliminar
+# Página: Eliminar Registro
 if st.session_state.pagina == "eliminar":
     st.markdown("---")
     st.subheader("🗑️ Eliminar Registro")
     
     registros = db.get_registros_fecha("2000-01-01", "2100-01-01")
     if registros:
-        # Mostrar selector de ID
-        opciones = {f"{r['id']} - {r['fecha']} - {r['tipo_dialisis']}": r['id'] for r in registros[:10]}
-        seleccion = st.selectbox("Selecciona registro a eliminar:", list(opciones.keys()))
+        # Crear opciones para el selector
+        opciones = {}
+        for r in registros[:20]:  # Mostrar últimos 20
+            fecha = r['fecha'][-5:] if r['fecha'] else ''
+            hora = r['hora'][:5] if r.get('hora') else ''
+            tipo = r['tipo_dialisis']
+            uf = r.get('uf_recambio_manual_ml') or r.get('uf_total_cicladora_ml') or 0
+            label = f"ID {r['id']} - {fecha} {hora} - {tipo} - UF: {uf:.0f} ml"
+            opciones[label] = r['id']
         
-        if st.button("🗑️ Confirmar eliminación", type="primary"):
-            st.info("Eliminación deshabilitada temporalmente")
+        seleccion = st.selectbox("Selecciona registro a eliminar:", list(opciones.keys()))
+        registro_id = opciones[seleccion]
+        
+        # Mostrar detalles del registro seleccionado
+        st.warning(f"¿Estás seguro de eliminar el registro ID {registro_id}?")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🗑️ CONFIRMAR ELIMINACIÓN", type="primary", use_container_width=True):
+                try:
+                    # Aquí irá la función de eliminar cuando la implementemos
+                    st.error("Función de eliminar en desarrollo - Por ahora usa Supabase")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+        with col2:
+            if st.button("Cancelar", use_container_width=True):
+                st.session_state.pagina = "principal"
+                st.rerun()
     else:
         st.info("No hay registros para eliminar")
     
     if st.button("← Volver al menú"):
         st.session_state.pagina = "principal"
         st.rerun()
-
 
 # Footer
 st.markdown("---")

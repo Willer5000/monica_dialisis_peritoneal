@@ -160,3 +160,12 @@ class Database:
             'uf_por_dia': uf_por_dia,
             'fechas': fechas_lista
         }
+    def eliminar_registro(self, registro_id, tipo):
+        """Eliminar un registro por ID y tipo"""
+        try:
+            tabla = 'registros_manual' if tipo == 'Manual' else 'registros_cicladora'
+            response = self.supabase.table(tabla).delete().eq('id', registro_id).execute()
+            return response.data
+        except Exception as e:
+            print(f"Error eliminando registro: {e}")
+            return None

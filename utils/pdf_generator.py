@@ -1,5 +1,4 @@
 from fpdf import FPDF
-import pandas as pd
 from datetime import datetime
 import os
 
@@ -11,18 +10,18 @@ class PDFReport(FPDF):
     def header(self):
         if self.page_no() == 1:
             self.set_font('Arial', 'B', 14)
-            self.cell(0, 10, 'INFORME DE DIÁLISIS PERITONEAL', 0, 1, 'C')
+            self.cell(0, 10, 'INFORME DE DIALISIS PERITONEAL', 0, 1, 'C')
             self.set_font('Arial', '', 10)
-            self.cell(0, 6, 'Paciente: Mónica Danitza Rojas Rocha - DNI: 93.620.268', 0, 1, 'C')
+            self.cell(0, 6, 'Paciente: Monica Danitza Rojas Rocha - DNI: 93.620.268', 0, 1, 'C')
             self.ln(5)
     
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
-        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+        self.cell(0, 10, f'Pagina {self.page_no()}', 0, 0, 'C')
 
 def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_informe):
-    """Genera PDF con informe completo del período seleccionado"""
+    """Genera PDF con informe completo del periodo seleccionado"""
     
     pdf = PDFReport()
     
@@ -35,8 +34,8 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
     # ENCABEZADO DEL INFORME
     # ============================================================
     pdf.set_font('Arial', 'B', 12)
-    pdf.cell(0, 8, f'Período: {fecha_inicio} al {fecha_fin}', 0, 1)
-    pdf.cell(0, 8, f'Fecha de generación: {datetime.now().strftime("%d/%m/%Y %H:%M")}', 0, 1)
+    pdf.cell(0, 8, f'Periodo: {fecha_inicio} al {fecha_fin}', 0, 1)
+    pdf.cell(0, 8, f'Fecha de generacion: {datetime.now().strftime("%d/%m/%Y %H:%M")}', 0, 1)
     pdf.ln(5)
     
     # ============================================================
@@ -44,49 +43,49 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
     # ============================================================
     if tipo_informe in ['resumen', 'completo'] and estadisticas:
         pdf.set_font('Arial', 'B', 14)
-        pdf.cell(0, 10, 'RESUMEN ESTADÍSTICO DEL PERÍODO', 0, 1)
+        pdf.cell(0, 10, 'RESUMEN ESTADISTICO DEL PERIODO', 0, 1)
         pdf.ln(2)
         
-        # Estadísticas generales
+        # Estadisticas generales
         pdf.set_font('Arial', 'B', 11)
-        pdf.cell(0, 7, '📊 Datos Generales:', 0, 1)
+        pdf.cell(0, 7, 'Datos Generales:', 0, 1)
         pdf.set_font('Arial', '', 10)
-        pdf.cell(0, 6, f'   • Días con tratamiento: {estadisticas.get("total_dias", 0)}', 0, 1)
+        pdf.cell(0, 6, f'   • Dias con tratamiento: {estadisticas.get("total_dias", 0)}', 0, 1)
         pdf.cell(0, 6, f'   • Total de registros: {estadisticas.get("total_registros", 0)}', 0, 1)
         pdf.cell(0, 6, f'   • Registros manuales: {estadisticas.get("total_manuales", 0)}', 0, 1)
         pdf.cell(0, 6, f'   • Registros cicladora: {estadisticas.get("total_cicladoras", 0)}', 0, 1)
         pdf.ln(3)
         
-        # Análisis de UF
+        # Analisis de UF
         pdf.set_font('Arial', 'B', 11)
-        pdf.cell(0, 7, '💧 Análisis de Ultrafiltración (UF):', 0, 1)
+        pdf.cell(0, 7, 'Analisis de Ultrafiltracion (UF):', 0, 1)
         pdf.set_font('Arial', '', 10)
-        pdf.cell(0, 6, f'   • UF Total del período: {estadisticas.get("uf_total_periodo", 0):.0f} ml', 0, 1)
-        pdf.cell(0, 6, f'   • UF Promedio por día: {estadisticas.get("uf_promedio_dia", 0):.0f} ml', 0, 1)
-        pdf.cell(0, 6, f'   • Valor máximo: {estadisticas.get("uf_max", 0):.0f} ml', 0, 1)
-        pdf.cell(0, 6, f'   • Valor mínimo: {estadisticas.get("uf_min", 0):.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   • UF Total del periodo: {estadisticas.get("uf_total_periodo", 0):.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   • UF Promedio por dia: {estadisticas.get("uf_promedio_dia", 0):.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   • Valor maximo: {estadisticas.get("uf_max", 0):.0f} ml', 0, 1)
+        pdf.cell(0, 6, f'   • Valor minimo: {estadisticas.get("uf_min", 0):.0f} ml', 0, 1)
         pdf.ln(3)
         
-        # Alertas clínicas
+        # Alertas clinicas
         pdf.set_font('Arial', 'B', 11)
-        pdf.cell(0, 7, '⚠️ Alertas Clínicas:', 0, 1)
+        pdf.cell(0, 7, 'Alertas Clinicas:', 0, 1)
         pdf.set_font('Arial', '', 10)
         
         dias_negativos = estadisticas.get("dias_con_uf_negativa", 0)
         if dias_negativos > 0:
             pdf.set_text_color(255, 0, 0)
-            pdf.cell(0, 6, f'   • Días con UF negativa: {dias_negativos} (retención de líquidos)', 0, 1)
+            pdf.cell(0, 6, f'   • ATENCION: Dias con UF negativa: {dias_negativos}', 0, 1)
             pdf.set_text_color(0, 0, 0)
         else:
-            pdf.cell(0, 6, f'   • Días con UF negativa: 0 (✓ Sin retención)', 0, 1)
+            pdf.cell(0, 6, f'   • Dias con UF negativa: 0', 0, 1)
         
-        pdf.cell(0, 6, f'   • Días con UF positiva: {estadisticas.get("dias_con_uf_positiva", 0)}', 0, 1)
+        pdf.cell(0, 6, f'   • Dias con UF positiva: {estadisticas.get("dias_con_uf_positiva", 0)}', 0, 1)
         pdf.ln(5)
         
-        # Tabla de resumen diario (si hay datos)
+        # Tabla de resumen diario
         if estadisticas.get('dias') and len(estadisticas['dias']) > 0:
             pdf.set_font('Arial', 'B', 11)
-            pdf.cell(0, 7, '📅 Resumen por Día:', 0, 1)
+            pdf.cell(0, 7, 'Resumen por Dia:', 0, 1)
             pdf.ln(2)
             
             # Encabezados
@@ -94,8 +93,8 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
             col_widths = [30, 25, 25, 25, 25]
             headers = ['Fecha', 'UF Cici', 'Manuales', 'UF Manual', 'UF Total']
             
-            for header in headers:
-                pdf.cell(col_widths[headers.index(header)], 7, header, 1, 0, 'C')
+            for i, header in enumerate(headers):
+                pdf.cell(col_widths[i], 7, header, 1, 0, 'C')
             pdf.ln()
             
             # Datos
@@ -151,11 +150,11 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
             tipo = reg.get('tipo_dialisis', '')[:3] if reg.get('tipo_dialisis') else ''
             pdf.cell(col_widths[3], 5, tipo, 1, 0, 'C')
             
-            # UF según tipo
+            # UF segun tipo
             if reg.get('tipo_dialisis') == 'Cicladora':
-                uf = reg.get('uf_total_cicladora_ml', 0)
+                uf = reg.get('uf_total_cicladora_ml', 0) or 0
             else:
-                uf = reg.get('uf_recambio_manual_ml', 0)
+                uf = reg.get('uf_recambio_manual_ml', 0) or 0
             
             if uf:
                 if uf < 0:

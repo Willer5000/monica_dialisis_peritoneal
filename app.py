@@ -11,12 +11,11 @@ try:
     from utils.database import Database
     db = Database()
     config = db.get_configuracion()
-    st.write("✅ Conexión a Supabase EXITOSA")
-    st.write(f"Paciente: {config.get('nombre')}")
 except Exception as e:
     st.error(f"❌ Error conectando a Supabase: {e}")
     st.stop()
 import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
@@ -223,9 +222,15 @@ if st.session_state.pagina == "ver":
             else x['uf_recambio_manual_ml'], axis=1
         )
         
+        # Crear columna de UF por registro
+        df['uf_mostrar'] = df.apply(
+            lambda x: x['uf_total_cicladora_ml'] if x['tipo_dialisis'] == 'Cicladora' 
+            else x['uf_recambio_manual_ml'], axis=1
+        )
+        
         # Agrupar por día para gráficos diarios
         df_diario = df.groupby(df['fecha'].dt.date).agg({
-            'uf_total_dia_ml': 'first',  # Todos los registros del mismo día tienen el mismo total
+            'uf_mostrar': 'sum',  # Sumar todas las UF del día
             'tipo_dialisis': lambda x: 'Mixto' if (x == 'Cicladora').any() and (x == 'Manual').any() 
                                          else ('Cicladora' if (x == 'Cicladora').all() else 'Manual'),
             'id': 'count'
@@ -620,20 +625,61 @@ if st.session_state.pagina == "informe":
         st.session_state.pagina = "principal"
         st.rerun()
 
-# Página: Modificar (placeholder)
-if st.session_state.pagina == "modificar":
+if st.session_state.pagina == "peso":
     st.markdown("---")
-    st.subheader("✏️ Modificar Registro")
-    st.info("Funcionalidad en desarrollo")
+    st.subheader("⚖️ Actualizar Peso y Altura")
+    
+    with st.form("form_peso"):
+        nuevo_peso = st.number_input("Nuevo Peso (kg)", 
+                                     min_value=30.0, max_value=200.0, 
+                                     value=float(config['peso_kg']), 
+                                     step=0.1, format="%.1f")
+        nueva_altura = st.number_input("Nueva Altura (m)", 
+                                       min_value=1.0, max_value=2.5, 
+                                       value=float(config['altura_m']), 
+                                       step=0.01, format="%.2f")
+        
+        if st.form_submit_button("💾 Actualizar", use_container_width=True):
+            try:
+                db.update_configuracion(nuevo_peso, nueva_altura)
+                st.success("✅ Peso y altura actualizados")
+                st.balloons()
+                st.session_state.pagina = "principal"
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
+    
     if st.button("← Volver al menú"):
         st.session_state.pagina = "principal"
         st.rerun()
 
-# Página: Eliminar (placeholder)
+
+
+# Página: Modificar
+if st.session_state.pagina == "modificar":
+    st.markdown("---")
+    st.subheader("✏️ Modificar Registro")
+    st.warning("Funcionalidad en desarrollo - Por ahora elimina y crea uno nuevo")
+    if st.button("← Volver al menú"):
+        st.session_state.pagina = "principal"
+        st.rerun()
+
+# Página: Eliminar
 if st.session_state.pagina == "eliminar":
     st.markdown("---")
     st.subheader("🗑️ Eliminar Registro")
-    st.info("Funcionalidad en desarrollo")
+    
+    registros = db.get_registros_fecha("2000-01-01", "2100-01-01")
+    if registros:
+        # Mostrar selector de ID
+        opciones = {f"{r['id']} - {r['fecha']} - {r['tipo_dialisis']}": r['id'] for r in registros[:10]}
+        seleccion = st.selectbox("Selecciona registro a eliminar:", list(opciones.keys()))
+        
+        if st.button("🗑️ Confirmar eliminación", type="primary"):
+            st.info("Eliminación deshabilitada temporalmente")
+    else:
+        st.info("No hay registros para eliminar")
+    
     if st.button("← Volver al menú"):
         st.session_state.pagina = "principal"
         st.rerun()

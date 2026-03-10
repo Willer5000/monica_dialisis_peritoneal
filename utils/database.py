@@ -86,6 +86,7 @@ class Database:
     def update_registro_cicladora(self, registro_id, datos):
         """Actualizar un registro de cicladora"""
         try:
+            # Asegurarse de que solo actualiza, no inserta
             registro = {
                 'fecha': datos.get('fecha'),
                 'hora_inicio': datos.get('hora_inicio'),
@@ -100,11 +101,21 @@ class Database:
                 'observaciones': datos.get('observaciones')
             }
             
+            # Filtrar None values
+            registro = {k: v for k, v in registro.items() if v is not None}
+            
             response = self.supabase.table('registros_cicladora')\
                 .update(registro)\
                 .eq('id', registro_id)\
                 .execute()
-            return response.data
+                
+            if response.data:
+                print(f"Registro {registro_id} actualizado correctamente")
+                return response.data
+            else:
+                print(f"No se encontró el registro {registro_id} para actualizar")
+                return None
+                
         except Exception as e:
             print(f"Error actualizando registro cicladora: {e}")
             return None

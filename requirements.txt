@@ -5,3 +5,4 @@ plotly
 fpdf
 python-dotenv
 pytz
+matplotlib

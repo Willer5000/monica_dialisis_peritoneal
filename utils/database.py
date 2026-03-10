@@ -18,7 +18,16 @@ class Database:
     def get_configuracion(self):
         """Obtener configuración del paciente"""
         response = self.supabase.table('configuracion').select('*').order('id', desc=True).limit(1).execute()
-        return response.data[0] if response.data else None
+        if response.data:
+            config = response.data[0]
+            # Calcular edad desde Python
+            from datetime import date
+            nacimiento = datetime.strptime(config['fecha_nacimiento'], '%Y-%m-%d').date()
+            hoy = date.today()
+            edad = hoy.year - nacimiento.year - ((hoy.month, hoy.day) < (nacimiento.month, nacimiento.day))
+            config['edad'] = edad
+            return config
+        return None
     
     def update_configuracion(self, peso, altura):
         """Actualizar peso y altura"""

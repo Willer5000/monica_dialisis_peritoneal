@@ -94,41 +94,6 @@ def generar_grafico_torta_distribucion(manuales, cicladoras, total_uf):
     
     return temp_file.name
 
-def generar_grafico_caja_uf(uf_manuales, uf_cicladoras):
-    """Genera diagrama de caja para comparar distribución de UF"""
-    plt.figure(figsize=(8, 6))
-    
-    data = []
-    labels = []
-    colors = []
-    
-    if uf_manuales:
-        data.append(uf_manuales)
-        labels.append('Manual')
-        colors.append('#ed8936')
-    
-    if uf_cicladoras:
-        data.append(uf_cicladoras)
-        labels.append('Cicladora')
-        colors.append('#4299e1')
-    
-    if data:
-        bp = plt.boxplot(data, patch_artist=True, labels=labels)
-        for patch, color in zip(bp['boxes'], colors):
-            patch.set_facecolor(color)
-            patch.set_alpha(0.7)
-        
-        plt.axhline(y=0, color='red', linestyle='--', alpha=0.5)
-        plt.title('Distribución de UF por Tipo', fontsize=14)
-        plt.ylabel('Ultrafiltración (ml)', fontsize=11)
-        plt.grid(True, alpha=0.3)
-    
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-    plt.savefig(temp_file.name, dpi=100, bbox_inches='tight')
-    plt.close()
-    
-    return temp_file.name
-
 def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_informe):
     """Genera PDF con informe completo del periodo seleccionado y gráficos"""
     
@@ -150,85 +115,16 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
     pdf.ln(5)
     
     # ============================================================
-    # INFORME RESUMEN CON GRÁFICOS (si aplica)
+    # INFORME RESUMEN
     # ============================================================
     if tipo_informe in ['resumen', 'completo'] and estadisticas:
         pdf.set_font('Arial', 'B', 14)
         pdf.cell(0, 10, 'RESUMEN ESTADISTICO DEL PERIODO', 0, 1)
         pdf.ln(2)
         
-        # ============================================================
-        # GRÁFICO 1: Evolución diaria
-        # ============================================================
-        if estadisticas.get('fechas') and estadisticas.get('uf_por_dia'):
-            pdf.set_font('Arial', 'B', 11)
-            pdf.cell(0, 7, 'Evolución de UF por Día:', 0, 1)
-            pdf.ln(2)
-            
-            archivo_grafico = generar_grafico_evolucion(
-                estadisticas['fechas'],
-                estadisticas['uf_por_dia'],
-                'Evolución de Ultrafiltración Diaria'
-            )
-            
-            pdf.image(archivo_grafico, x=10, y=pdf.get_y(), w=190)
-            pdf.ln(70)  # Espacio después del gráfico
-            os.unlink(archivo_grafico)
-        
-        # ============================================================
-        # GRÁFICO 2: Comparativa por tipo (si hay ambos tipos)
-        # ============================================================
-        uf_cicladora_por_dia = []
-        uf_manual_por_dia = []
-        fechas_lista = []
-        
-        for fecha, datos in estadisticas['dias'].items():
-            fechas_lista.append(fecha)
-            uf_cicladora_por_dia.append(datos.get('uf_cicladora', 0))
-            uf_manual_por_dia.append(datos.get('uf_manual', 0))
-        
-        if any(uf_cicladora_por_dia) and any(uf_manual_por_dia):
-            pdf.set_font('Arial', 'B', 11)
-            pdf.cell(0, 7, 'Comparativa Cicladora vs Manual:', 0, 1)
-            pdf.ln(2)
-            
-            archivo_comparativo = generar_grafico_barras_comparativo(
-                fechas_lista,
-                uf_cicladora_por_dia,
-                uf_manual_por_dia,
-                'Comparativa UF por Tipo'
-            )
-            
-            pdf.image(archivo_comparativo, x=10, y=pdf.get_y(), w=190)
-            pdf.ln(70)
-            os.unlink(archivo_comparativo)
-        
-        # ============================================================
-        # GRÁFICO 3: Distribución de UF (torta)
-        # ============================================================
-        if estadisticas.get('uf_cicladora_total', 0) > 0 or estadisticas.get('uf_manual_total', 0) > 0:
-            pdf.set_font('Arial', 'B', 11)
-            pdf.cell(0, 7, 'Distribución de UF:', 0, 1)
-            pdf.ln(2)
-            
-            archivo_torta = generar_grafico_torta_distribucion(
-                estadisticas.get('uf_manual_total', 0),
-                estadisticas.get('uf_cicladora_total', 0),
-                estadisticas.get('uf_total_periodo', 0)
-            )
-            
-            pdf.image(archivo_torta, x=50, y=pdf.get_y(), w=110)
-            pdf.ln(70)
-            os.unlink(archivo_torta)
-        
-        # ============================================================
-        # ESTADÍSTICAS EN TABLA
-        # ============================================================
+        # Estadisticas generales
         pdf.set_font('Arial', 'B', 11)
-        pdf.cell(0, 7, 'Resumen Numérico:', 0, 1)
-        pdf.ln(2)
-        
-        # Datos generales
+        pdf.cell(0, 7, 'Datos Generales:', 0, 1)
         pdf.set_font('Arial', '', 10)
         pdf.cell(0, 6, f'   - Dias con tratamiento: {estadisticas.get("total_dias", 0)}', 0, 1)
         pdf.cell(0, 6, f'   - Total de registros: {estadisticas.get("total_registros", 0)}', 0, 1)
@@ -236,14 +132,21 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
         pdf.cell(0, 6, f'   - Registros cicladora: {estadisticas.get("total_cicladoras", 0)}', 0, 1)
         pdf.ln(3)
         
-        # Análisis de UF
+        # Analisis de UF
+        pdf.set_font('Arial', 'B', 11)
+        pdf.cell(0, 7, 'Analisis de Ultrafiltracion (UF):', 0, 1)
+        pdf.set_font('Arial', '', 10)
         pdf.cell(0, 6, f'   - UF Total del periodo: {estadisticas.get("uf_total_periodo", 0):.0f} ml', 0, 1)
         pdf.cell(0, 6, f'   - UF Promedio por dia: {estadisticas.get("uf_promedio_dia", 0):.0f} ml', 0, 1)
         pdf.cell(0, 6, f'   - Valor maximo: {estadisticas.get("uf_max", 0):.0f} ml', 0, 1)
         pdf.cell(0, 6, f'   - Valor minimo: {estadisticas.get("uf_min", 0):.0f} ml', 0, 1)
         pdf.ln(3)
         
-        # Alertas clínicas
+        # Alertas clinicas
+        pdf.set_font('Arial', 'B', 11)
+        pdf.cell(0, 7, 'Alertas Clinicas:', 0, 1)
+        pdf.set_font('Arial', '', 10)
+        
         dias_negativos = estadisticas.get("dias_con_uf_negativa", 0)
         if dias_negativos > 0:
             pdf.set_text_color(255, 0, 0)
@@ -288,6 +191,68 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
                 pdf.set_text_color(0, 0, 0)
                 pdf.ln()
             pdf.ln(10)
+    
+    # ============================================================
+    # GRÁFICOS EN HOJAS SEPARADAS (ANEXOS)
+    # ============================================================
+    if tipo_informe in ['resumen', 'completo'] and estadisticas:
+        # Gráfico 1 - Evolución
+        if estadisticas.get('fechas') and estadisticas.get('uf_por_dia'):
+            pdf.add_page()
+            pdf.set_font('Arial', 'B', 14)
+            pdf.cell(0, 10, 'ANEXO 1 - Evolución de UF Diaria', 0, 1, 'C')
+            pdf.ln(5)
+            
+            archivo_grafico = generar_grafico_evolucion(
+                estadisticas['fechas'],
+                estadisticas['uf_por_dia'],
+                'Evolución de Ultrafiltración Diaria'
+            )
+            pdf.image(archivo_grafico, x=10, y=pdf.get_y(), w=190)
+            pdf.ln(70)
+            os.unlink(archivo_grafico)
+        
+        # Gráfico 2 - Comparativa
+        uf_cicladora_por_dia = []
+        uf_manual_por_dia = []
+        fechas_lista = []
+        
+        for fecha, datos in estadisticas['dias'].items():
+            fechas_lista.append(fecha)
+            uf_cicladora_por_dia.append(datos.get('uf_cicladora', 0))
+            uf_manual_por_dia.append(datos.get('uf_manual', 0))
+        
+        if any(uf_cicladora_por_dia) and any(uf_manual_por_dia):
+            pdf.add_page()
+            pdf.set_font('Arial', 'B', 14)
+            pdf.cell(0, 10, 'ANEXO 2 - Comparativa Cicladora vs Manual', 0, 1, 'C')
+            pdf.ln(5)
+            
+            archivo_comparativo = generar_grafico_barras_comparativo(
+                fechas_lista,
+                uf_cicladora_por_dia,
+                uf_manual_por_dia,
+                'Comparativa UF por Tipo'
+            )
+            pdf.image(archivo_comparativo, x=10, y=pdf.get_y(), w=190)
+            pdf.ln(70)
+            os.unlink(archivo_comparativo)
+        
+        # Gráfico 3 - Distribución
+        if estadisticas.get('uf_cicladora_total', 0) > 0 or estadisticas.get('uf_manual_total', 0) > 0:
+            pdf.add_page()
+            pdf.set_font('Arial', 'B', 14)
+            pdf.cell(0, 10, 'ANEXO 3 - Distribución de UF', 0, 1, 'C')
+            pdf.ln(5)
+            
+            archivo_torta = generar_grafico_torta_distribucion(
+                estadisticas.get('uf_manual_total', 0),
+                estadisticas.get('uf_cicladora_total', 0),
+                estadisticas.get('uf_total_periodo', 0)
+            )
+            pdf.image(archivo_torta, x=50, y=pdf.get_y(), w=110)
+            pdf.ln(70)
+            os.unlink(archivo_torta)
     
     # ============================================================
     # BASE DE DATOS (registros detallados)
@@ -348,15 +313,20 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
         
         if cicladoras:
             if manuales:
-                pdf.ln(5)
+                pdf.add_page()
             
-            pdf.set_font('Arial', 'B', 12)
-            pdf.cell(0, 8, 'Registros de Cicladora:', 0, 1)
+            pdf.set_font('Arial', 'B', 14)
+            pdf.cell(0, 10, 'REGISTROS DE CICLADORA - DATOS DE LA MÁQUINA', 0, 1)
+            pdf.ln(5)
+            
+            # Tabla principal con datos de la máquina
+            pdf.set_font('Arial', 'B', 10)
+            pdf.cell(0, 8, 'Valores mostrados por la cicladora:', 0, 1)
             pdf.ln(2)
             
             pdf.set_font('Arial', 'B', 8)
-            headers = ['ID', 'Fecha', 'UF', 'Efic', 'Bolsa1', 'Bolsa2', 'Dren.Ini', 'Obs']
-            col_widths = [10, 22, 18, 18, 22, 22, 20, 28]
+            headers = ['ID', 'Fecha', 'UF Total', 'Dren.Ini', 'T.Perm', 'T.Perd', 'Ciclos', 'Efic']
+            col_widths = [10, 22, 20, 20, 20, 18, 15, 20]
             
             for i, header in enumerate(headers):
                 pdf.cell(col_widths[i], 6, header, 1, 0, 'C')
@@ -374,20 +344,49 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
                 pdf.cell(col_widths[1], 5, fecha_str, 1, 0, 'C')
                 
                 pdf.cell(col_widths[2], 5, f"{reg.get('uf_total_cicladora_ml', 0)}", 1, 0, 'R')
-                pdf.cell(col_widths[3], 5, f"{reg.get('eficiencia_ml_por_hora', 0):.0f}", 1, 0, 'R')
+                pdf.cell(col_widths[3], 5, f"{reg.get('vol_drenaje_inicial_ml', 0)}", 1, 0, 'R')
+                pdf.cell(col_widths[4], 5, f"{reg.get('tiempo_permanencia_promedio_min', 0)}", 1, 0, 'R')
+                pdf.cell(col_widths[5], 5, f"{reg.get('tiempo_perdido_min', 0)}", 1, 0, 'R')
+                pdf.cell(col_widths[6], 5, f"{reg.get('numero_ciclos_completados', 0)}", 1, 0, 'R')
+                pdf.cell(col_widths[7], 5, f"{reg.get('eficiencia_ml_por_hora', 0):.0f}", 1, 0, 'R')
+                pdf.ln()
+            
+            pdf.ln(5)
+            
+            # Tabla de bolsas utilizadas
+            pdf.set_font('Arial', 'B', 10)
+            pdf.cell(0, 8, 'Bolsas utilizadas:', 0, 1)
+            pdf.ln(2)
+            
+            pdf.set_font('Arial', 'B', 8)
+            headers_bolsas = ['ID', 'Fecha', 'Bolsa 1', 'Bolsa 2', 'Observaciones']
+            col_widths_bolsas = [10, 22, 25, 25, 50]
+            
+            for i, header in enumerate(headers_bolsas):
+                pdf.cell(col_widths_bolsas[i], 6, header, 1, 0, 'C')
+            pdf.ln()
+            
+            pdf.set_font('Arial', '', 7)
+            for reg in cicladoras:
+                pdf.cell(col_widths_bolsas[0], 5, str(reg.get('id', '')), 1, 0, 'C')
                 
-                # Solo mostrar colores de las bolsas (sin volúmenes)
-                bolsa1 = reg.get('concentracion_bolsa1', '')[:3] if reg.get('concentracion_bolsa1') else '-'
-                bolsa2 = reg.get('concentracion_bolsa2', '')[:3] if reg.get('concentracion_bolsa2') else '-'
-                pdf.cell(col_widths[4], 5, bolsa1, 1, 0, 'C')
-                pdf.cell(col_widths[5], 5, bolsa2, 1, 0, 'C')
+                if reg.get('fecha'):
+                    fecha_obj = datetime.strptime(reg['fecha'], '%Y-%m-%d')
+                    fecha_str = fecha_obj.strftime('%d/%m/%Y')
+                else:
+                    fecha_str = ''
+                pdf.cell(col_widths_bolsas[1], 5, fecha_str, 1, 0, 'C')
                 
-                pdf.cell(col_widths[6], 5, f"{reg.get('vol_drenaje_inicial_ml', 0)}", 1, 0, 'R')
+                bolsa1 = reg.get('concentracion_bolsa1', '') if reg.get('concentracion_bolsa1') else '-'
+                pdf.cell(col_widths_bolsas[2], 5, bolsa1, 1, 0, 'C')
                 
-                obs = reg.get('observaciones', '')[:15]
-                if len(reg.get('observaciones', '')) > 15:
+                bolsa2 = reg.get('concentracion_bolsa2', '') if reg.get('concentracion_bolsa2') else '-'
+                pdf.cell(col_widths_bolsas[3], 5, bolsa2, 1, 0, 'C')
+                
+                obs = reg.get('observaciones', '')[:40]
+                if len(reg.get('observaciones', '')) > 40:
                     obs += '...'
-                pdf.cell(col_widths[7], 5, obs, 1, 0, 'L')
+                pdf.cell(col_widths_bolsas[4], 5, obs, 1, 0, 'L')
                 pdf.ln()
     
     # Guardar PDF

@@ -88,9 +88,9 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
             pdf.cell(0, 7, 'Resumen por Dia:', 0, 1)
             pdf.ln(2)
             
-            # Encabezados
+            # Encabezados - más anchos
             pdf.set_font('Arial', 'B', 9)
-            col_widths = [30, 25, 25, 25, 25]
+            col_widths = [35, 30, 30, 30, 35]  # Columnas más anchas
             headers = ['Fecha', 'UF Cici', 'Manuales', 'UF Manual', 'UF Total']
             
             for i, header in enumerate(headers):
@@ -101,7 +101,7 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
             pdf.set_font('Arial', '', 8)
             for fecha, datos_dia in estadisticas['dias'].items():
                 fecha_obj = datetime.strptime(fecha, '%Y-%m-%d')
-                fecha_str = fecha_obj.strftime('%d/%m')
+                fecha_str = fecha_obj.strftime('%d/%m/%Y')  # Fecha completa con año
                 
                 pdf.cell(col_widths[0], 6, fecha_str, 1, 0, 'C')
                 pdf.cell(col_widths[1], 6, f'{datos_dia.get("uf_cicladora", 0):.0f}', 1, 0, 'R')
@@ -127,51 +127,92 @@ def generar_informe_pdf(registros, estadisticas, fecha_inicio, fecha_fin, tipo_i
         pdf.cell(0, 10, 'DETALLE DE REGISTROS', 0, 1)
         pdf.ln(5)
         
-        # Encabezados de tabla
-        pdf.set_font('Arial', 'B', 8)
-        headers = ['ID', 'Fecha', 'Hora', 'Tipo', 'UF (ml)', 'Color', 'Obs']
-        col_widths = [10, 20, 15, 18, 20, 18, 35]
+        # Verificar si hay registros manuales para mostrar columnas adicionales
+        hay_manuales = any(r['tipo_dialisis'] == 'Manual' for r in registros)
+        hay_cicladoras = any(r['tipo_dialisis'] == 'Cicladora' for r in registros)
         
-        for i, header in enumerate(headers):
-            pdf.cell(col_widths[i], 6, header, 1, 0, 'C')
-        pdf.ln()
-        
-        # Datos
-        pdf.set_font('Arial', '', 7)
-        for reg in registros[:50]:  # Limitar a 50 registros
-            pdf.cell(col_widths[0], 5, str(reg.get('id', '')), 1, 0, 'C')
+        if hay_manuales:
+            # Tabla para registros manuales (con todas las columnas)
+            pdf.set_font('Arial', 'B', 8)
+            headers = ['ID', 'Fecha', 'Hora', 'Tipo', 'Color', 'Infundido', 'Drenado', 'Balance', 'Obs']
+            col_widths = [10, 22, 15, 18, 18, 22, 22, 22, 28]  # Más anchas
             
-            fecha = reg.get('fecha', '')[-5:] if reg.get('fecha') else ''
-            pdf.cell(col_widths[1], 5, fecha, 1, 0, 'C')
-            
-            hora = reg.get('hora', '')[:5] if reg.get('hora') else ''
-            pdf.cell(col_widths[2], 5, hora, 1, 0, 'C')
-            
-            tipo = reg.get('tipo_dialisis', '')[:3] if reg.get('tipo_dialisis') else ''
-            pdf.cell(col_widths[3], 5, tipo, 1, 0, 'C')
-            
-            # UF segun tipo
-            if reg.get('tipo_dialisis') == 'Cicladora':
-                uf = reg.get('uf_total_cicladora_ml', 0) or 0
-            else:
-                uf = reg.get('uf_recambio_manual_ml', 0) or 0
-            
-            if uf:
-                if uf < 0:
-                    pdf.set_text_color(255, 0, 0)
-                pdf.cell(col_widths[4], 5, f'{uf:.0f}', 1, 0, 'R')
-                pdf.set_text_color(0, 0, 0)
-            else:
-                pdf.cell(col_widths[4], 5, '-', 1, 0, 'C')
-            
-            color = reg.get('color_bolsa', '')[:3] if reg.get('color_bolsa') else '-'
-            pdf.cell(col_widths[5], 5, color, 1, 0, 'C')
-            
-            obs = reg.get('observaciones', '')[:20]
-            if len(reg.get('observaciones', '')) > 20:
-                obs += '...'
-            pdf.cell(col_widths[6], 5, obs, 1, 0, 'L')
+            for i, header in enumerate(headers):
+                pdf.cell(col_widths[i], 6, header, 1, 0, 'C')
             pdf.ln()
+            
+            pdf.set_font('Arial', '', 7)
+            for reg in registros:
+                if reg['tipo_dialisis'] == 'Manual':
+                    pdf.cell(col_widths[0], 5, str(reg.get('id', '')), 1, 0, 'C')
+                    
+                    # Fecha completa
+                    fecha_str = reg.get('fecha', '')[-5:] if reg.get('fecha') else ''
+                    if reg.get('fecha'):
+                        fecha_obj = datetime.strptime(reg['fecha'], '%Y-%m-%d')
+                        fecha_str = fecha_obj.strftime('%d/%m/%Y')
+                    pdf.cell(col_widths[1], 5, fecha_str, 1, 0, 'C')
+                    
+                    pdf.cell(col_widths[2], 5, reg.get('hora', '')[:5] if reg.get('hora') else '', 1, 0, 'C')
+                    pdf.cell(col_widths[3], 5, 'Manual', 1, 0, 'C')  # Tipo completo
+                    pdf.cell(col_widths[4], 5, reg.get('color_bolsa', '')[:3] if reg.get('color_bolsa') else '-', 1, 0, 'C')
+                    pdf.cell(col_widths[5], 5, f"{reg.get('volumen_infundido_ml', 0)}", 1, 0, 'R')
+                    pdf.cell(col_widths[6], 5, f"{reg.get('volumen_drenado_ml', 0)}", 1, 0, 'R')
+                    
+                    balance = reg.get('uf_recambio_manual_ml', 0)
+                    if balance < 0:
+                        pdf.set_text_color(255, 0, 0)
+                    pdf.cell(col_widths[7], 5, f"{balance}", 1, 0, 'R')
+                    pdf.set_text_color(0, 0, 0)
+                    
+                    obs = reg.get('observaciones', '')[:15]
+                    if len(reg.get('observaciones', '')) > 15:
+                        obs += '...'
+                    pdf.cell(col_widths[8], 5, obs, 1, 0, 'L')
+                    pdf.ln()
+            pdf.ln(5)
+        
+        if hay_cicladoras:
+            if hay_manuales:
+                pdf.add_page()  # Nueva página para cicladoras si ya mostramos manuales
+            
+            # Tabla para registros de cicladora
+            pdf.set_font('Arial', 'B', 8)
+            headers = ['ID', 'Fecha', 'Inicio', 'Fin', 'UF', 'Efic', 'Bolsa1', 'Bolsa2', 'Obs']
+            col_widths = [10, 22, 15, 15, 18, 18, 25, 25, 28]
+            
+            for i, header in enumerate(headers):
+                pdf.cell(col_widths[i], 6, header, 1, 0, 'C')
+            pdf.ln()
+            
+            pdf.set_font('Arial', '', 7)
+            for reg in registros:
+                if reg['tipo_dialisis'] == 'Cicladora':
+                    pdf.cell(col_widths[0], 5, str(reg.get('id', '')), 1, 0, 'C')
+                    
+                    # Fecha completa
+                    fecha_str = reg.get('fecha', '')[-5:] if reg.get('fecha') else ''
+                    if reg.get('fecha'):
+                        fecha_obj = datetime.strptime(reg['fecha'], '%Y-%m-%d')
+                        fecha_str = fecha_obj.strftime('%d/%m/%Y')
+                    pdf.cell(col_widths[1], 5, fecha_str, 1, 0, 'C')
+                    
+                    pdf.cell(col_widths[2], 5, reg.get('hora_inicio', '')[:5] if reg.get('hora_inicio') else '', 1, 0, 'C')
+                    pdf.cell(col_widths[3], 5, reg.get('hora_fin', '')[:5] if reg.get('hora_fin') else '', 1, 0, 'C')
+                    pdf.cell(col_widths[4], 5, f"{reg.get('uf_total_cicladora_ml', 0)}", 1, 0, 'R')
+                    pdf.cell(col_widths[5], 5, f"{reg.get('eficiencia_ml_por_hora', 0):.0f}", 1, 0, 'R')
+                    
+                    # Bolsas (con color y volumen)
+                    bolsa1 = f"{reg.get('concentracion_bolsa1', '')[:3]}:{reg.get('volumen_bolsa1_ml', 0)}" if reg.get('concentracion_bolsa1') else '-'
+                    bolsa2 = f"{reg.get('concentracion_bolsa2', '')[:3]}:{reg.get('volumen_bolsa2_ml', 0)}" if reg.get('concentracion_bolsa2') else '-'
+                    pdf.cell(col_widths[6], 5, bolsa1, 1, 0, 'C')
+                    pdf.cell(col_widths[7], 5, bolsa2, 1, 0, 'C')
+                    
+                    obs = reg.get('observaciones', '')[:15]
+                    if len(reg.get('observaciones', '')) > 15:
+                        obs += '...'
+                    pdf.cell(col_widths[8], 5, obs, 1, 0, 'L')
+                    pdf.ln()
     
     # Guardar PDF
     filename = f"informe_dialisis_{fecha_inicio.replace('/', '_')}_a_{fecha_fin.replace('/', '_')}.pdf"

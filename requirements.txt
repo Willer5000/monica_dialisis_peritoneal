@@ -6,3 +6,4 @@ fpdf
 python-dotenv
 pytz
 matplotlib
+gtts

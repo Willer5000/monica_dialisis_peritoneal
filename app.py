@@ -648,18 +648,6 @@ if st.session_state.pagina == "nuevo":
     tipo = st.radio("Seleccionar tipo:", ["Manual", "Cicladora"], horizontal=True)
     
     if tipo == "Manual":
-        # Inicializar estado para unidad
-        if "unidad_manual" not in st.session_state:
-            st.session_state.unidad_manual = "Kilogramos (kg)"
-
-        # Selector de unidad de peso (fuera del form)
-        unidad = st.radio(
-            "Unidad de peso:",
-            ["Kilogramos (kg)", "Gramos (g)"],
-            horizontal=True,
-            key="unidad_manual"
-        )
-        
         with st.form("form_manual"):
             st.markdown("### 🖐️ Diálisis Manual")
             
@@ -667,19 +655,10 @@ if st.session_state.pagina == "nuevo":
             with col1:
                 fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
             with col2:
-                # Selector de hora con dígitos individuales
-                col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1, 1, 0.5, 1, 1])
-                with col_h1:
-                    hora_h = st.number_input("Hora", min_value=0, max_value=23, value=datetime.now(BAIRES_TZ).hour, step=1, format="%02d", key="hora_h_manual")
-                with col_h2:
-                    st.markdown("<h3 style='text-align: center; margin-top: 25px;'>:</h3>", unsafe_allow_html=True)
-                with col_h3:
-                    pass
-                with col_h4:
-                    hora_m = st.number_input("Min", min_value=0, max_value=59, value=datetime.now(BAIRES_TZ).minute, step=1, format="%02d", key="hora_m_manual")
-                with col_h5:
-                    st.markdown("")
-                hora = f"{hora_h:02d}:{hora_m:02d}:00"
+                # Selector de hora tipo ruleta (nativo del celular)
+                hora_time = st.time_input("Hora", datetime.now(BAIRES_TZ).time(), step=60)
+                # Convertir a string para guardar
+                hora_str = hora_time.strftime("%H:%M:%S")
             
             concentracion = st.selectbox("Concentración (Color)", ["Amarillo", "Verde", "Rojo"])
             
@@ -739,7 +718,7 @@ if st.session_state.pagina == "nuevo":
             if st.form_submit_button("💾 Guardar Registro Manual", use_container_width=True):
                 datos = {
                     'fecha': fecha.strftime("%Y-%m-%d"),
-                    'hora': hora.strftime("%H:%M:%S"),
+                    'hora': hora_str,  # Usar hora_str en lugar de hora
                     'concentracion': concentracion,
                     'peso_llena': peso_llena_kg,
                     'peso_vacia': peso_vacia_kg,
@@ -764,7 +743,20 @@ if st.session_state.pagina == "nuevo":
             with col1:
                 fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
             with col2:
-                pass
+                # Esto es solo para mantener el layout
+                st.markdown("")
+            
+            # Selectores de hora tipo ruleta (uno para inicio, otro para fin)
+            st.markdown("#### ⏰ Horario del tratamiento")
+            col_h1, col_h2 = st.columns(2)
+            with col_h1:
+                hora_inicio = st.time_input("Hora inicio", datetime.now(BAIRES_TZ).time(), step=60)
+            with col_h2:
+                hora_fin = st.time_input("Hora fin", (datetime.now(BAIRES_TZ) + timedelta(hours=8)).time(), step=60)
+            
+            # Convertir a string para guardar
+            hora_inicio_str = hora_inicio.strftime("%H:%M:%S")
+            hora_fin_str = hora_fin.strftime("%H:%M:%S")
             
             st.markdown("#### 🧴 BOLSAS UTILIZADAS")
             st.caption("La cicladora usa 2 bolsas. Selecciona los colores que utilizaste.")
@@ -792,8 +784,8 @@ if st.session_state.pagina == "nuevo":
             if st.form_submit_button("💾 Guardar Registro Cicladora", use_container_width=True):
                 datos = {
                     'fecha': fecha.strftime("%Y-%m-%d"),
-                    'hora_inicio': datetime.now(BAIRES_TZ).time().strftime("%H:%M:%S"),  # Hora actual como inicio
-                    'hora_fin': (datetime.now(BAIRES_TZ) + timedelta(hours=8)).time().strftime("%H:%M:%S"),
+                    'hora_inicio': hora_inicio_str,
+                    'hora_fin': hora_fin_str,
                     'drenaje_inicial': drenaje_inicial,
                     'uf_total': uf_total,
                     'tiempo_permanencia': tiempo_permanencia,
@@ -1591,10 +1583,13 @@ if st.session_state.pagina == "modificar":
                     format="DD/MM/YYYY"
                 )
             with col2:
-                nueva_hora = st.time_input(
+                # En Modificar Manual, reemplazar el selector de hora:
+                nueva_hora_time = st.time_input(
                     "Hora",
-                    datetime.strptime(registro['hora'], '%H:%M:%S').time()
+                    datetime.strptime(registro['hora'], '%H:%M:%S').time(),
+                    step=60
                 )
+                nueva_hora_str = nueva_hora_time.strftime("%H:%M:%S")
 
             nueva_concentracion = st.selectbox(
                 "Concentración (Color)",
@@ -1769,35 +1764,19 @@ if st.session_state.pagina == "modificar":
                     format="DD/MM/YYYY"
                 )
             with col2:
-                # Hora inicio con dígitos
-                st.markdown("**Hora inicio**")
-                col_i1, col_i2, col_i3, col_i4, col_i5 = st.columns([1, 1, 0.5, 1, 1])
-                with col_i1:
-                    inicio_h = st.number_input("Hora", min_value=0, max_value=23, value=datetime.now(BAIRES_TZ).hour, step=1, format="%02d", key="inicio_h")
-                with col_i2:
-                    st.markdown("<h3 style='text-align: center; margin-top: 25px;'>:</h3>", unsafe_allow_html=True)
-                with col_i3:
-                    pass
-                with col_i4:
-                    inicio_m = st.number_input("Min", min_value=0, max_value=59, value=datetime.now(BAIRES_TZ).minute, step=1, format="%02d", key="inicio_m")
-                with col_i5:
-                    st.markdown("")
-                hora_inicio = f"{inicio_h:02d}:{inicio_m:02d}:00"
-                
-                # Hora fin con dígitos
-                st.markdown("**Hora fin**")
-                col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns([1, 1, 0.5, 1, 1])
-                with col_f1:
-                    fin_h = st.number_input("Hora", min_value=0, max_value=23, value=(datetime.now(BAIRES_TZ) + timedelta(hours=8)).hour % 24, step=1, format="%02d", key="fin_h")
-                with col_f2:
-                    st.markdown("<h3 style='text-align: center; margin-top: 25px;'>:</h3>", unsafe_allow_html=True)
-                with col_f3:
-                    pass
-                with col_f4:
-                    fin_m = st.number_input("Min", min_value=0, max_value=59, value=datetime.now(BAIRES_TZ).minute, step=1, format="%02d", key="fin_m")
-                with col_f5:
-                    st.markdown("")
-                hora_fin = f"{fin_h:02d}:{fin_m:02d}:00"
+                # En Modificar Cicladora
+                hora_inicio_time = st.time_input(
+                    "Hora inicio",
+                    datetime.strptime(registro['hora_inicio'], '%H:%M:%S').time(),
+                    step=60
+                )
+                hora_fin_time = st.time_input(
+                    "Hora fin",
+                    datetime.strptime(registro['hora_fin'], '%H:%M:%S').time(),
+                    step=60
+                )
+                hora_inicio_str = hora_inicio_time.strftime("%H:%M:%S")
+                hora_fin_str = hora_fin_time.strftime("%H:%M:%S")
             
             st.markdown("#### 🧴 BOLSAS UTILIZADAS")
             col1, col2 = st.columns(2)

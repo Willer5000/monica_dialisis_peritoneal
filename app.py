@@ -1528,11 +1528,21 @@ if st.session_state.pagina == "modificar":
                 st.session_state.modificar_paso = "seleccionar"
                 st.rerun()
             
-            # Inicializar estado para unidad
+            # Inicializar estado para unidad si no existe
             if "unidad_mod_manual" not in st.session_state:
                 st.session_state.unidad_mod_manual = "Kilogramos (kg)"
             
             st.markdown(f"### ✏️ Editando Registro Manual ID: {registro_id}")
+            
+            # Selector de unidad de peso (FUERA del form para que actualice inmediatamente)
+            unidad_seleccionada = st.radio(
+                "Unidad de peso:",
+                ["Kilogramos (kg)", "Gramos (g)"],
+                horizontal=True,
+                key="unidad_radio_mod"
+            )
+            # Actualizar session_state con la selección
+            st.session_state.unidad_mod_manual = unidad_seleccionada
             
             with st.form("form_modificar_manual"):
                 col1, col2 = st.columns(2)
@@ -1555,13 +1565,6 @@ if st.session_state.pagina == "modificar":
                     index=["Amarillo", "Verde", "Rojo"].index(registro['concentracion'])
                 )
                 
-                # Selector de unidad de peso
-                st.session_state.unidad_mod_manual = st.radio(
-                    "Unidad de peso:",
-                    ["Kilogramos (kg)", "Gramos (g)"],
-                    horizontal=True
-                )
-                
                 # Valores actuales
                 peso_llena_actual = float(registro['peso_bolsa_llena_kg'])
                 peso_vacia_actual = float(registro['peso_bolsa_vacia_kg'] or 0)
@@ -1572,9 +1575,10 @@ if st.session_state.pagina == "modificar":
                 peso_vacia_kg = peso_vacia_actual
                 peso_drenaje_kg = peso_drenaje_actual
                 
-                # Mostrar campos según unidad
+                st.markdown("#### ⚖️ Pesos")
+                
+                # Mostrar campos según unidad seleccionada (usando session_state)
                 if st.session_state.unidad_mod_manual == "Kilogramos (kg)":
-                    st.markdown("#### ⚖️ Pesos (en kilogramos)")
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         peso_llena = st.number_input(
@@ -1604,7 +1608,6 @@ if st.session_state.pagina == "modificar":
                         peso_drenaje_kg = peso_drenaje
                         st.caption(f"Actual: {peso_drenaje_actual:.3f} kg")
                 else:  # Gramos
-                    st.markdown("#### ⚖️ Pesos (en gramos)")
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         peso_llena_g = st.number_input(

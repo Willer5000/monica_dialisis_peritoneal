@@ -33,25 +33,36 @@ st.set_page_config(
 )
 
 # Estilos CSS personalizados
+# Estilos CSS personalizados - MÁS CLARO Y LEGIBLE
 st.markdown("""
 <style>
     .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
     }
     .main-header {
-        background: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.98);
         padding: 2rem;
         border-radius: 20px;
         margin-bottom: 2rem;
         text-align: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        border: 1px solid #fbcfe8;
+    }
+    .main-header h1 {
+        color: #831843;
+        font-size: 2.2rem !important;
+    }
+    .main-header h2 {
+        color: #9d174d;
+        font-size: 1.6rem !important;
     }
     .paciente-card {
         background: white;
         padding: 1.5rem;
         border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         margin-bottom: 1rem;
+        border: 1px solid #fbcfe8;
     }
     .boton-menu {
         background: white;
@@ -61,31 +72,206 @@ st.markdown("""
         cursor: pointer;
         transition: all 0.3s;
         margin: 0.5rem 0;
-        border: none;
+        border: 2px solid #f9a8d4;
         width: 100%;
-        font-size: 1.1rem;
+        font-size: 1.2rem !important;
         font-weight: bold;
+        color: #831843;
     }
     .boton-menu:hover {
         transform: translateY(-5px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-        background: #f0f0f0;
+        box-shadow: 0 6px 12px rgba(249, 168, 212, 0.3);
+        background: #fdf2f8;
+        border-color: #f472b6;
     }
     .ultimo-registro {
-        background: #e6fffa;
-        padding: 1rem;
+        background: #fdf2f8;
+        padding: 1.2rem;
         border-radius: 10px;
-        border-left: 4px solid #48bb78;
+        border-left: 4px solid #ec4899;
         margin: 1rem 0;
+        font-size: 1.1rem !important;
     }
     .footer {
         text-align: center;
-        color: white;
+        color: #831843;
         margin-top: 2rem;
-        opacity: 0.8;
+        opacity: 0.9;
+        font-size: 1rem !important;
+    }
+    /* Aumentar tamaño de fuente general */
+    .stMarkdown, .stText, p, li, .stMetric label, .stMetric div {
+        font-size: 1.1rem !important;
+    }
+    .stMetric .metric-value {
+        font-size: 1.8rem !important;
+    }
+    .stButton button {
+        font-size: 1.1rem !important;
+        padding: 0.75rem 1rem !important;
+    }
+    .stSelectbox div[data-baseweb="select"] span {
+        font-size: 1.1rem !important;
+    }
+    .stNumberInput input {
+        font-size: 1.1rem !important;
+    }
+    .stDateInput input {
+        font-size: 1.1rem !important;
+    }
+    .stTimeInput input {
+        font-size: 1.1rem !important;
+    }
+    .stTextArea textarea {
+        font-size: 1.1rem !important;
+    }
+    /* Tarjetas de métricas */
+    div[data-testid="metric-container"] {
+        background: white;
+        padding: 1rem;
+        border-radius: 10px;
+        border: 1px solid #fbcfe8;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 </style>
 """, unsafe_allow_html=True)
+
+
+# ============================================================
+# FUNCIÓN PARA TEXTO A VOZ (SIN API KEY)
+# ============================================================
+st.markdown("""
+<script>
+let vozHabilitada = false;
+let vozFemenina = true;
+
+function hablar(texto) {
+    if (!vozHabilitada) return;
+    
+    // Cancelar cualquier síntesis en curso
+    window.speechSynthesis.cancel();
+    
+    // Crear nuevo mensaje
+    const utterance = new SpeechSynthesisUtterance(texto);
+    utterance.lang = 'es-ES';
+    utterance.rate = 0.9;  // Velocidad
+    utterance.pitch = 1;    // Tono
+    utterance.volume = 1;   // Volumen
+    
+    // Seleccionar voz (femenina o masculina)
+    const voces = window.speechSynthesis.getVoices();
+    if (voces.length > 0) {
+        if (vozFemenina) {
+            // Buscar voz femenina en español
+            const vozFem = voces.find(v => v.lang.includes('es') && v.name.includes('Female'));
+            if (vozFem) utterance.voice = vozFem;
+        } else {
+            // Buscar voz masculina en español
+            const vozMasc = voces.find(v => v.lang.includes('es') && v.name.includes('Male'));
+            if (vozMasc) utterance.voice = vozMasc;
+        }
+    }
+    
+    window.speechSynthesis.speak(utterance);
+}
+
+function toggleVoz() {
+    vozHabilitada = !vozHabilitada;
+    const btn = document.getElementById('btn-voz');
+    if (vozHabilitada) {
+        btn.innerHTML = '🔊 VOZ ACTIVADA';
+        btn.style.backgroundColor = '#ec4899';
+        btn.style.color = 'white';
+        hablar('Guía de voz activada');
+    } else {
+        btn.innerHTML = '🔇 ACTIVAR VOZ';
+        btn.style.backgroundColor = '#f9a8d4';
+        btn.style.color = '#831843';
+        window.speechSynthesis.cancel();
+    }
+}
+
+function cambiarVoz(tipo) {
+    vozFemenina = (tipo === 'femenina');
+    const btn = document.getElementById('btn-voz-fem');
+    const btnMasc = document.getElementById('btn-voz-masc');
+    if (tipo === 'femenina') {
+        btn.style.backgroundColor = '#ec4899';
+        btn.style.color = 'white';
+        btnMasc.style.backgroundColor = '#f9a8d4';
+        btnMasc.style.color = '#831843';
+    } else {
+        btnMasc.style.backgroundColor = '#ec4899';
+        btnMasc.style.color = 'white';
+        btn.style.backgroundColor = '#f9a8d4';
+        btn.style.color = '#831843';
+    }
+    if (vozHabilitada) {
+        hablar('Voz cambiada a ' + tipo);
+    }
+}
+</script>
+
+<style>
+.voz-control {
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    margin: 10px 0;
+    border: 2px solid #f9a8d4;
+    text-align: center;
+}
+.voz-btn {
+    background: #f9a8d4;
+    color: #831843;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 1.1rem !important;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.voz-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(236, 72, 153, 0.3);
+}
+.voz-btn-activo {
+    background: #ec4899;
+    color: white;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Controles de voz en la barra lateral
+with st.sidebar:
+    st.markdown("### 🎤 Control de Voz")
+    
+    # Botón principal de voz
+    st.components.v1.html("""
+    <button id="btn-voz" class="voz-btn" style="width:100%;" onclick="toggleVoz()">
+        🔊 ACTIVAR VOZ
+    </button>
+    """, height=50)
+    
+    # Selector de tipo de voz
+    col_v1, col_v2 = st.columns(2)
+    with col_v1:
+        st.components.v1.html("""
+        <button id="btn-voz-fem" class="voz-btn" style="width:100%; background:#ec4899; color:white;" onclick="cambiarVoz('femenina')">
+            👩 Femenina
+        </button>
+        """, height=50)
+    with col_v2:
+        st.components.v1.html("""
+        <button id="btn-voz-masc" class="voz-btn" style="width:100%;" onclick="cambiarVoz('masculina')">
+            👨 Masculina
+        </button>
+        """, height=50)
+    
+    st.markdown("---")
+
 
 # Inicializar conexión a base de datos
 @st.cache_resource
@@ -481,7 +667,19 @@ if st.session_state.pagina == "nuevo":
             with col1:
                 fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
             with col2:
-                hora = st.time_input("Hora", datetime.now(BAIRES_TZ).time())
+                # Selector de hora con dígitos individuales
+                col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1, 1, 0.5, 1, 1])
+                with col_h1:
+                    hora_h = st.number_input("Hora", min_value=0, max_value=23, value=datetime.now(BAIRES_TZ).hour, step=1, format="%02d", key="hora_h_manual")
+                with col_h2:
+                    st.markdown("<h3 style='text-align: center; margin-top: 25px;'>:</h3>", unsafe_allow_html=True)
+                with col_h3:
+                    pass
+                with col_h4:
+                    hora_m = st.number_input("Min", min_value=0, max_value=59, value=datetime.now(BAIRES_TZ).minute, step=1, format="%02d", key="hora_m_manual")
+                with col_h5:
+                    st.markdown("")
+                hora = f"{hora_h:02d}:{hora_m:02d}:00"
             
             concentracion = st.selectbox("Concentración (Color)", ["Amarillo", "Verde", "Rojo"])
             
@@ -620,305 +818,638 @@ if st.session_state.pagina == "nuevo":
 
 # Página: Ayuda Cicladora (nueva página)
 # Página: Ayuda Cicladora (mejorada visualmente)
+# Página: Ayuda Cicladora (mejorada visualmente con voz)
 if st.session_state.get("pagina") == "ayuda_cicladora":
     st.markdown("""
     <style>
     .paso-card {
         background: white;
-        padding: 1.5rem;
-        border-radius: 15px;
-        margin: 1rem 0;
-        border-left: 5px solid #667eea;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 2rem;
+        border-radius: 20px;
+        margin: 1.5rem 0;
+        border-left: 8px solid #ec4899;
+        box-shadow: 0 10px 25px rgba(236, 72, 153, 0.15);
     }
     .paso-titulo {
-        color: #2d3748;
-        font-size: 1.3rem;
+        color: #831843;
+        font-size: 1.8rem !important;
         font-weight: bold;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
     }
     .paso-contenido {
         color: #4a5568;
-        line-height: 1.6;
+        line-height: 1.8;
+        font-size: 1.2rem !important;
     }
     .numero-paso {
-        background: #667eea;
+        background: #ec4899;
         color: white;
-        width: 30px;
-        height: 30px;
+        width: 45px;
+        height: 45px;
         border-radius: 50%;
         display: inline-block;
         text-align: center;
-        line-height: 30px;
-        margin-right: 10px;
+        line-height: 45px;
+        margin-right: 15px;
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    .boton-paso {
+        background: white;
+        border: 2px solid #f9a8d4;
+        border-radius: 50px;
+        padding: 12px 20px;
+        margin: 5px;
+        font-size: 1.1rem !important;
+        font-weight: bold;
+        color: #831843;
+        cursor: pointer;
+        transition: all 0.3s;
+        min-width: 90px;
+    }
+    .boton-paso:hover {
+        background: #fdf2f8;
+        border-color: #ec4899;
+        transform: scale(1.05);
+    }
+    .voz-control {
+        background: white;
+        padding: 15px;
+        border-radius: 15px;
+        margin: 10px 0;
+        border: 2px solid #f9a8d4;
+        text-align: center;
+    }
+    .voz-btn {
+        background: #f9a8d4;
+        color: #831843;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 20px;
+        margin: 5px;
+        font-size: 1.1rem !important;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .voz-btn:hover {
+        background: #ec4899;
+        color: white;
+        transform: scale(1.05);
+    }
+    .voz-btn-activo {
+        background: #ec4899 !important;
+        color: white !important;
     }
     </style>
+    
+    <script>
+    // Sistema de voz en español latino (usando voces del navegador)
+    let vozHabilitada = false;
+    let vozFemenina = true;
+    let vocesCargadas = false;
+    
+    // Cargar voces disponibles
+    function cargarVoces() {
+        return new Promise((resolve) => {
+            let voces = window.speechSynthesis.getVoices();
+            if (voces.length > 0) {
+                vocesCargadas = true;
+                resolve(voces);
+            } else {
+                window.speechSynthesis.onvoiceschanged = () => {
+                    voces = window.speechSynthesis.getVoices();
+                    vocesCargadas = true;
+                    resolve(voces);
+                };
+            }
+        });
+    }
+    
+    // Función principal para hablar
+    async function hablar(texto) {
+        if (!vozHabilitada) return;
+        
+        // Cancelar cualquier síntesis en curso
+        window.speechSynthesis.cancel();
+        
+        // Esperar a que carguen las voces
+        if (!vocesCargadas) {
+            await cargarVoces();
+        }
+        
+        // Crear nuevo mensaje
+        const utterance = new SpeechSynthesisUtterance(texto);
+        utterance.lang = 'es-ES';  // El navegador usará la voz latina disponible
+        utterance.rate = 0.9;      // Velocidad más pausada
+        utterance.pitch = 1.0;      // Tono normal
+        utterance.volume = 1.0;     // Volumen máximo
+        
+        // Seleccionar la mejor voz disponible en español latino
+        const voces = window.speechSynthesis.getVoices();
+        console.log('Voces disponibles:', voces.map(v => v.name));
+        
+        if (voces.length > 0) {
+            // Buscar voces en español
+            const vocesEspañol = voces.filter(v => v.lang.includes('es'));
+            
+            if (vocesEspañol.length > 0) {
+                // Preferir voces latinoamericanas
+                const vozLatina = vocesEspañol.find(v => 
+                    v.name.includes('Latin') || 
+                    v.name.includes('America') || 
+                    v.name.includes('Mexican') ||
+                    v.name.includes('Spanish') && (v.name.includes('Female') || v.name.includes('Male'))
+                );
+                
+                if (vozLatina) {
+                    utterance.voice = vozLatina;
+                } else {
+                    // Si no hay latina, usar cualquier voz en español
+                    const vozGenero = vocesEspañol.find(v => 
+                        (vozFemenina && v.name.includes('Female')) || 
+                        (!vozFemenina && v.name.includes('Male'))
+                    );
+                    if (vozGenero) utterance.voice = vozGenero;
+                }
+            }
+        }
+        
+        window.speechSynthesis.speak(utterance);
+    }
+    
+    function toggleVoz() {
+        vozHabilitada = !vozHabilitada;
+        const btn = document.getElementById('btn-voz');
+        if (vozHabilitada) {
+            btn.innerHTML = '🔊 VOZ ACTIVADA';
+            btn.classList.add('voz-btn-activo');
+            hablar('Guía de voz activada. Bienvenida a la ayuda de cicladora.');
+        } else {
+            btn.innerHTML = '🔇 ACTIVAR VOZ';
+            btn.classList.remove('voz-btn-activo');
+            window.speechSynthesis.cancel();
+        }
+    }
+    
+    function cambiarVoz(tipo) {
+        vozFemenina = (tipo === 'femenina');
+        const btnFem = document.getElementById('btn-voz-fem');
+        const btnMasc = document.getElementById('btn-voz-masc');
+        
+        if (tipo === 'femenina') {
+            btnFem.classList.add('voz-btn-activo');
+            btnMasc.classList.remove('voz-btn-activo');
+        } else {
+            btnMasc.classList.add('voz-btn-activo');
+            btnFem.classList.remove('voz-btn-activo');
+        }
+        
+        if (vozHabilitada) {
+            hablar('Voz cambiada a ' + (vozFemenina ? 'femenina' : 'masculina'));
+        }
+    }
+    
+    // Cargar voces al iniciar
+    cargarVoces();
+    </script>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
     st.markdown("## 🤖 GUÍA INTERACTIVA - CICLADORA BAXTER")
     
+    # ============================================================
+    # CONTROLES DE VOZ
+    # ============================================================
+    st.markdown("### 🎤 Control de Voz")
+    col_v1, col_v2, col_v3 = st.columns([2, 1, 1])
+    
+    with col_v1:
+        st.components.v1.html("""
+        <button id="btn-voz" class="voz-btn" style="width:100%;" onclick="toggleVoz()">
+            🔊 ACTIVAR VOZ
+        </button>
+        """, height=50)
+    
+    with col_v2:
+        st.components.v1.html("""
+        <button id="btn-voz-fem" class="voz-btn voz-btn-activo" style="width:100%;" onclick="cambiarVoz('femenina')">
+            👩 Femenina
+        </button>
+        """, height=50)
+    
+    with col_v3:
+        st.components.v1.html("""
+        <button id="btn-voz-masc" class="voz-btn" style="width:100%;" onclick="cambiarVoz('masculina')">
+            👨 Masculina
+        </button>
+        """, height=50)
+    
+    st.markdown("---")
+    
     # Inicializar paso
     if "paso_cicladora" not in st.session_state:
         st.session_state.paso_cicladora = 1
     
+    # ============================================================
+    # BOTONES DE NAVEGACIÓN RÁPIDA (PASOS 1-9)
+    # ============================================================
+    st.markdown("### 🔢 Saltar a paso:")
+    
+    pasos_titulos = [
+        "1. Preparación", "2. Cassette", "3. Autocomprobación",
+        "4. Conectar", "5. Cebado", "6. Conexión",
+        "7. Inicio", "8. Despertar", "9. Registro"
+    ]
+    
+    # Fila 1
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button(pasos_titulos[0], key="paso1", use_container_width=True):
+            st.session_state.paso_cicladora = 1
+            st.rerun()
+    with col2:
+        if st.button(pasos_titulos[1], key="paso2", use_container_width=True):
+            st.session_state.paso_cicladora = 2
+            st.rerun()
+    with col3:
+        if st.button(pasos_titulos[2], key="paso3", use_container_width=True):
+            st.session_state.paso_cicladora = 3
+            st.rerun()
+    
+    # Fila 2
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button(pasos_titulos[3], key="paso4", use_container_width=True):
+            st.session_state.paso_cicladora = 4
+            st.rerun()
+    with col2:
+        if st.button(pasos_titulos[4], key="paso5", use_container_width=True):
+            st.session_state.paso_cicladora = 5
+            st.rerun()
+    with col3:
+        if st.button(pasos_titulos[5], key="paso6", use_container_width=True):
+            st.session_state.paso_cicladora = 6
+            st.rerun()
+    
+    # Fila 3
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button(pasos_titulos[6], key="paso7", use_container_width=True):
+            st.session_state.paso_cicladora = 7
+            st.rerun()
+    with col2:
+        if st.button(pasos_titulos[7], key="paso8", use_container_width=True):
+            st.session_state.paso_cicladora = 8
+            st.rerun()
+    with col3:
+        if st.button(pasos_titulos[8], key="paso9", use_container_width=True):
+            st.session_state.paso_cicladora = 9
+            st.rerun()
+    
+    st.markdown("---")
+    
     # Barra de progreso
-    progreso = (st.session_state.paso_cicladora - 1) / 8
+    progreso = (st.session_state.paso_cicladora) / 9
     st.progress(progreso, text=f"Paso {st.session_state.paso_cicladora} de 9")
     
-    # Contenedor del paso actual
-    with st.container():
-        if st.session_state.paso_cicladora == 1:
-            st.markdown("""
-            <div class="paso-card">
-                <div class="paso-titulo">
-                    <span class="numero-paso">1</span> ⚡ PREPARACIÓN INICIAL
-                </div>
-                <div class="paso-contenido">
-                    <p>🔌 <strong>Encender el equipo:</strong> Busca el botón en la parte POSTERIOR de la máquina y presiónalo.</p>
-                    <p>⏳ Espera a que aparezca la pantalla de inicio.</p>
-                    <p>✅ Presiona el botón verde <strong>"GO"</strong>.</p>
-                    <p>📏 Selecciona <strong>"Modo volumen pequeño"</strong> y presiona verde nuevamente.</p>
-                    <p style="color: #48bb78; font-weight: bold;">✓ La máquina está lista para el siguiente paso</p>
-                </div>
+    # ============================================================
+    # PASO 1
+    # ============================================================
+    if st.session_state.paso_cicladora == 1:
+        st.markdown("""
+        <div class="paso-card">
+            <div class="paso-titulo">
+                <span class="numero-paso">1</span> ⚡ PREPARACIÓN INICIAL
             </div>
-            """, unsafe_allow_html=True)
-            
-            if st.button("✅ LISTO - PASO 2", use_container_width=True):
+            <div class="paso-contenido">
+                <p>🔌 <strong>Encender el equipo:</strong> Busca el botón en la parte POSTERIOR de la máquina y presiónalo.</p>
+                <p>⏳ Espera a que aparezca la pantalla de inicio.</p>
+                <p>✅ Presiona el botón verde <strong>"GO"</strong>.</p>
+                <p>📏 Selecciona <strong>"Modo volumen pequeño"</strong> y presiona verde nuevamente.</p>
+                <p style="color: #ec4899; font-weight: bold; font-size: 1.3rem;">✓ La máquina está lista</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Botón de voz para este paso
+        st.components.v1.html("""
+        <button class="voz-btn" style="margin: 10px 0;" onclick="hablar(`Paso 1: Preparación inicial. Primero, enciende el equipo buscando el botón en la parte posterior de la máquina. Espera a que aparezca la pantalla de inicio. Luego presiona el botón verde GO. Finalmente selecciona Modo volumen pequeño y presiona verde nuevamente.`)">
+            🎧 ESCUCHAR PASO 1
+        </button>
+        """, height=50)
+        
+        if st.button("✅ PASO 2", use_container_width=True):
+            if 'vozHabilitada' in st.session_state and st.session_state.vozHabilitada:
+                st.components.v1.html("<script>hablar('Avanzando al paso 2');</script>", height=0)
+            st.session_state.paso_cicladora = 2
+            st.rerun()
+    
+    # ============================================================
+    # PASO 2
+    # ============================================================
+    elif st.session_state.paso_cicladora == 2:
+        st.markdown("""
+        <div class="paso-card">
+            <div class="paso-titulo">
+                <span class="numero-paso">2</span> 📦 COLOCAR EL CASSETTE
+            </div>
+            <div class="paso-contenido">
+                <p>📎 <strong>Preparar cassette:</strong> Sácalo del envoltorio con cuidado.</p>
+                <p>🔓 Levanta la manija para abrir la puerta del porta cassette.</p>
+                <p>➡️ Inserta el cassette con la <strong>parte blanda hacia la máquina</strong>.</p>
+                <p>🔒 Cierra la puerta bajando la palanca (debe hacer clic).</p>
+                <p>🧩 Acomoda el organizador azul.</p>
+                <p>📌 Cierra las 6 pinzas (todas).</p>
+                <p>🗑️ Coloca la línea de drenaje dentro del bidón vacío.</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.components.v1.html("""
+        <button class="voz-btn" style="margin: 10px 0;" onclick="hablar(`Paso 2: Colocar el cassette. Saca el cassette del envoltorio con cuidado. Levanta la manija para abrir la puerta del porta cassette. Inserta el cassette con la parte blanda hacia la máquina. Cierra la puerta bajando la palanca hasta que haga clic. Acomoda el organizador azul. Cierra las 6 pinzas. Coloca la línea de drenaje dentro del bidón vacío.`)">
+            🎧 ESCUCHAR PASO 2
+        </button>
+        """, height=50)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⬅️ PASO 1", use_container_width=True):
+                st.session_state.paso_cicladora = 1
+                st.rerun()
+        with col2:
+            if st.button("✅ PASO 3", use_container_width=True):
+                st.session_state.paso_cicladora = 3
+                st.rerun()
+    
+    # ============================================================
+    # PASO 3
+    # ============================================================
+    elif st.session_state.paso_cicladora == 3:
+        st.markdown("""
+        <div class="paso-card">
+            <div class="paso-titulo">
+                <span class="numero-paso">3</span> 🔄 AUTOCOMPROBACIÓN
+            </div>
+            <div class="paso-contenido">
+                <p>⏳ <strong>La máquina hará un test automático.</strong> Espera unos segundos.</p>
+                <p>🧼 <strong>Mientras tanto:</strong> Lávate las manos profundamente (mínimo 40 segundos).</p>
+                <p>✅ Prepara las bolsas para el siguiente paso.</p>
+                <p>🔔 La máquina pitará cuando termine.</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.components.v1.html("""
+        <button class="voz-btn" style="margin: 10px 0;" onclick="hablar(`Paso 3: Autocomprobación. La máquina hará un test automático. Espera unos segundos. Mientras tanto, lávate las manos profundamente por al menos 40 segundos. Prepara las bolsas para el siguiente paso. La máquina pitará cuando termine.`)">
+            🎧 ESCUCHAR PASO 3
+        </button>
+        """, height=50)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⬅️ PASO 2", use_container_width=True):
                 st.session_state.paso_cicladora = 2
                 st.rerun()
-        
-        elif st.session_state.paso_cicladora == 2:
-            st.markdown("""
-            <div class="paso-card">
-                <div class="paso-titulo">
-                    <span class="numero-paso">2</span> 📦 COLOCAR EL CASSETTE
-                </div>
-                <div class="paso-contenido">
-                    <p>📎 <strong>Preparar cassette:</strong> Sácalo del envoltorio con cuidado.</p>
-                    <p>🔓 Levanta la manija para abrir la puerta del porta cassette.</p>
-                    <p>➡️ Inserta el cassette con la <strong>parte blanda hacia la máquina</strong>.</p>
-                    <p>🔒 Cierra la puerta bajando la palanca (debe hacer clic).</p>
-                    <p>🧩 Acomoda el organizador azul.</p>
-                    <p>📌 Cierra las 6 pinzas (todas).</p>
-                    <p>🗑️ Coloca la línea de drenaje dentro del bidón vacío.</p>
-                </div>
+        with col2:
+            if st.button("✅ PASO 4", use_container_width=True):
+                st.session_state.paso_cicladora = 4
+                st.rerun()
+    
+    # ============================================================
+    # PASO 4
+    # ============================================================
+    elif st.session_state.paso_cicladora == 4:
+        st.markdown("""
+        <div class="paso-card">
+            <div class="paso-titulo">
+                <span class="numero-paso">4</span> 🧴 CONECTAR BOLSAS
             </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("⬅️ PASO 1", use_container_width=True):
-                    st.session_state.paso_cicladora = 1
-                    st.rerun()
-            with col2:
-                if st.button("✅ PASO 3", use_container_width=True):
-                    st.session_state.paso_cicladora = 3
-                    st.rerun()
-        
-        elif st.session_state.paso_cicladora == 3:
-            st.markdown("""
-            <div class="paso-card">
-                <div class="paso-titulo">
-                    <span class="numero-paso">3</span> 🔄 AUTOCOMPROBACIÓN
-                </div>
-                <div class="paso-contenido">
-                    <p>⏳ <strong>La máquina hará un test automático.</strong> Espera unos segundos.</p>
-                    <p>🧼 <strong>Mientras tanto:</strong> Lávate las manos profundamente (mínimo 40 segundos).</p>
-                    <p>✅ Prepara las bolsas para el siguiente paso.</p>
-                    <p>🔔 La máquina pitará cuando termine.</p>
-                </div>
+            <div class="paso-contenido">
+                <p>🔵 Coloca las pinzas azules en las bolsas (para sujetarlas).</p>
+                <p>🔴 Afloja la espiga del clamp ROJO (bolsa superior - se calienta).</p>
+                <p>⚪ Afloja la espiga del clamp BLANCO (segunda bolsa, si usas dos).</p>
+                <p style="background: #fdf2f8; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                    <strong>💡 Importante:</strong> La espiga del clamp rojo SIEMPRE va a la bolsa de arriba 
+                    (la que calienta la máquina).
+                </p>
+                <p>🖐️ Sujeta la pinza, rompe la mariposa de la bolsa y conecta la espiga.</p>
             </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("⬅️ PASO 2", use_container_width=True):
-                    st.session_state.paso_cicladora = 2
-                    st.rerun()
-            with col2:
-                if st.button("✅ PASO 4", use_container_width=True):
-                    st.session_state.paso_cicladora = 4
-                    st.rerun()
+        </div>
+        """, unsafe_allow_html=True)
         
-        elif st.session_state.paso_cicladora == 4:
-            st.markdown("""
-            <div class="paso-card">
-                <div class="paso-titulo">
-                    <span class="numero-paso">4</span> 🧴 CONECTAR BOLSAS
-                </div>
-                <div class="paso-contenido">
-                    <p>🔵 Coloca las pinzas azules en las bolsas (para sujetarlas).</p>
-                    <p>🔴 Afloja la espiga del clamp ROJO (bolsa superior - se calienta).</p>
-                    <p>⚪ Afloja la espiga del clamp BLANCO (segunda bolsa, si usas dos).</p>
-                    <p style="background: #f0f9ff; padding: 10px; border-radius: 8px; margin: 10px 0;">
-                        <strong>💡 Importante:</strong> La espiga del clamp rojo SIEMPRE va a la bolsa de arriba 
-                        (la que calienta la máquina).
-                    </p>
-                    <p>🖐️ Sujeta la pinza, rompe la mariposa de la bolsa y conecta la espiga.</p>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("⬅️ PASO 3", use_container_width=True):
-                    st.session_state.paso_cicladora = 3
-                    st.rerun()
-            with col2:
-                if st.button("✅ PASO 5", use_container_width=True):
-                    st.session_state.paso_cicladora = 5
-                    st.rerun()
+        st.components.v1.html("""
+        <button class="voz-btn" style="margin: 10px 0;" onclick="hablar(`Paso 4: Conectar bolsas. Coloca las pinzas azules en las bolsas para sujetarlas. Afloja la espiga del clamp rojo que va a la bolsa superior que se calienta. Afloja la espiga del clamp blanco para la segunda bolsa si usas dos. Recuerda, la espiga del clamp rojo siempre va a la bolsa de arriba. Sujeta la pinza, rompe la mariposa de la bolsa y conecta la espiga.`)">
+            🎧 ESCUCHAR PASO 4
+        </button>
+        """, height=50)
         
-        elif st.session_state.paso_cicladora == 5:
-            st.markdown("""
-            <div class="paso-card">
-                <div class="paso-titulo">
-                    <span class="numero-paso">5</span> 💧 CEVADO DE LÍNEAS
-                </div>
-                <div class="paso-contenido">
-                    <p>🔓 Retira las pinzas azules de las bolsas.</p>
-                    <p>🚰 Abre los clamp de las bolsas (rojo y blanco).</p>
-                    <p>🩺 Abre el clamp de la línea del paciente.</p>
-                    <p>✅ Presiona botón verde <strong>"CONTINUAR"</strong>.</p>
-                    <p>⏳ La máquina purgará las tubuladuras automáticamente (verás burbujas).</p>
-                </div>
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⬅️ PASO 3", use_container_width=True):
+                st.session_state.paso_cicladora = 3
+                st.rerun()
+        with col2:
+            if st.button("✅ PASO 5", use_container_width=True):
+                st.session_state.paso_cicladora = 5
+                st.rerun()
+    
+    # ============================================================
+    # PASO 5
+    # ============================================================
+    elif st.session_state.paso_cicladora == 5:
+        st.markdown("""
+        <div class="paso-card">
+            <div class="paso-titulo">
+                <span class="numero-paso">5</span> 💧 CEVADO DE LÍNEAS
             </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("⬅️ PASO 4", use_container_width=True):
-                    st.session_state.paso_cicladora = 4
-                    st.rerun()
-            with col2:
-                if st.button("✅ PASO 6", use_container_width=True):
-                    st.session_state.paso_cicladora = 6
-                    st.rerun()
+            <div class="paso-contenido">
+                <p>🔓 Retira las pinzas azules de las bolsas.</p>
+                <p>🚰 Abre los clamp de las bolsas (rojo y blanco).</p>
+                <p>🩺 Abre el clamp de la línea del paciente.</p>
+                <p>✅ Presiona botón verde <strong>"CONTINUAR"</strong>.</p>
+                <p>⏳ La máquina purgará las tubuladuras automáticamente (verás burbujas).</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-        elif st.session_state.paso_cicladora == 6:
-            st.markdown("""
-            <div class="paso-card">
-                <div class="paso-titulo">
-                    <span class="numero-paso">6</span> 👤 CONEXIÓN AL PACIENTE
-                </div>
-                <div class="paso-contenido">
-                    <p>🔒 Cierra el clamp de la línea del paciente.</p>
-                    <p>🧴 Limpia la zona de conexión con alcohol (como te indicó el médico).</p>
-                    <p>🔄 Conecta el catéter del paciente a la línea.</p>
-                    <p>🔓 Abre el catéter y el clamp de la línea del paciente.</p>
-                    <p>✅ Presiona botón verde <strong>"CONTINUAR"</strong>.</p>
-                    <p>📏 Selecciona <strong>"Modo volumen pequeño"</strong> (NO presiones continuar aún).</p>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("⬅️ PASO 5", use_container_width=True):
-                    st.session_state.paso_cicladora = 5
-                    st.rerun()
-            with col2:
-                if st.button("✅ PASO 7", use_container_width=True):
-                    st.session_state.paso_cicladora = 7
-                    st.rerun()
+        st.components.v1.html("""
+        <button class="voz-btn" style="margin: 10px 0;" onclick="hablar(`Paso 5: Cebado de líneas. Retira las pinzas azules de las bolsas. Abre los clamp de las bolsas rojo y blanco. Abre el clamp de la línea del paciente. Presiona el botón verde continuar. La máquina purgará las tubuladuras automáticamente y verás burbujas.`)">
+            🎧 ESCUCHAR PASO 5
+        </button>
+        """, height=50)
         
-        elif st.session_state.paso_cicladora == 7:
-            st.markdown("""
-            <div class="paso-card">
-                <div class="paso-titulo">
-                    <span class="numero-paso">7</span> 🌙 INICIO DEL TRATAMIENTO
-                </div>
-                <div class="paso-contenido">
-                    <p>🔍 La máquina mostrará <strong>"Verificar drenaje inicial"</strong>.</p>
-                    <p>⏳ Verás el primer drenaje (sale líquido del abdomen).</p>
-                    <p>🔄 Luego comenzarán los ciclos automáticos:</p>
-                    <p style="margin-left: 20px;">💧 INFUSIÓN → ⏱️ PERMANENCIA → 🚰 DRENAJE</p>
-                    <p>😴 <strong>Puedes dormir tranquilo.</strong> La máquina trabajará sola.</p>
-                    <p>⏰ El proceso tomará varias horas (lo que haya programado el médico).</p>
-                </div>
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⬅️ PASO 4", use_container_width=True):
+                st.session_state.paso_cicladora = 4
+                st.rerun()
+        with col2:
+            if st.button("✅ PASO 6", use_container_width=True):
+                st.session_state.paso_cicladora = 6
+                st.rerun()
+    
+    # ============================================================
+    # PASO 6
+    # ============================================================
+    elif st.session_state.paso_cicladora == 6:
+        st.markdown("""
+        <div class="paso-card">
+            <div class="paso-titulo">
+                <span class="numero-paso">6</span> 👤 CONEXIÓN AL PACIENTE
             </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("⬅️ PASO 6", use_container_width=True):
-                    st.session_state.paso_cicladora = 6
-                    st.rerun()
-            with col2:
-                if st.button("✅ PASO 8", use_container_width=True):
-                    st.session_state.paso_cicladora = 8
-                    st.rerun()
+            <div class="paso-contenido">
+                <p>🔒 Cierra el clamp de la línea del paciente.</p>
+                <p>🧴 Limpia la zona de conexión con alcohol (como te indicó el médico).</p>
+                <p>🔄 Conecta el catéter del paciente a la línea.</p>
+                <p>🔓 Abre el catéter y el clamp de la línea del paciente.</p>
+                <p>✅ Presiona botón verde <strong>"CONTINUAR"</strong>.</p>
+                <p>📏 Selecciona <strong>"Modo volumen pequeño"</strong> (NO presiones continuar aún).</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-        elif st.session_state.paso_cicladora == 8:
-            st.markdown("""
-            <div class="paso-card">
-                <div class="paso-titulo">
-                    <span class="numero-paso">8</span> 🌅 AL DESPERTAR - FIN DEL TRATAMIENTO
-                </div>
-                <div class="paso-contenido">
-                    <p>🔔 La máquina mostrará <strong>"FIN DE TRATAMIENTO"</strong>.</p>
-                    <p>⬇️ Presiona flecha hacia abajo hasta ver <strong>"DRENAJE MANUAL"</strong>.</p>
-                    <p>⬅️ Confirma con la flecha izquierda.</p>
-                    <p>⏳ Espera a que termine el drenaje (vacía tu abdomen).</p>
-                    <p>✅ Presiona botón verde <strong>"CONTINUAR"</strong>.</p>
-                    <p>🔒 La máquina dirá <strong>"CIERRE CLAMP (TODOS)"</strong> - cierra clamp de línea y catéter.</p>
-                    <p>✅ Presiona verde nuevamente.</p>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("⬅️ PASO 7", use_container_width=True):
-                    st.session_state.paso_cicladora = 7
-                    st.rerun()
-            with col2:
-                if st.button("✅ PASO 9", use_container_width=True):
-                    st.session_state.paso_cicladora = 9
-                    st.rerun()
+        st.components.v1.html("""
+        <button class="voz-btn" style="margin: 10px 0;" onclick="hablar(`Paso 6: Conexión al paciente. Cierra el clamp de la línea del paciente. Limpia la zona de conexión con alcohol como te indicó el médico. Conecta el catéter del paciente a la línea. Abre el catéter y el clamp de la línea del paciente. Presiona el botón verde continuar. Luego selecciona Modo volumen pequeño pero no presiones continuar todavía.`)">
+            🎧 ESCUCHAR PASO 6
+        </button>
+        """, height=50)
         
-        elif st.session_state.paso_cicladora == 9:
-            st.markdown("""
-            <div class="paso-card">
-                <div class="paso-titulo">
-                    <span class="numero-paso">9</span> 📋 REGISTRO DE DATOS
-                </div>
-                <div class="paso-contenido">
-                    <p>🫱 La máquina dirá <strong>"DESCONECTESE"</strong>.</p>
-                    <p>🧴 Limpia y aplica alcohol según indicación.</p>
-                    <p>✅ Presiona verde para continuar.</p>
-                    <p>📤 La máquina dirá <strong>"DESCONECTEME"</strong> - ya puedes sacar el cassette.</p>
-                    <p style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0;">
-                        <strong>📝 AHORA TOMA NOTA DE ESTOS VALORES (ANÓTALOS):</strong><br>
-                        • 📊 Drenaje inicial: ______ ml<br>
-                        • 💧 Ultrafiltración total: ______ ml<br>
-                        • ⏱️ Tiempo medio de permanencia: ______ min<br>
-                        • ⌛ Tiempo perdido: ______ min
-                    </p>
-                    <p>🔌 Apaga el equipo con el botón posterior.</p>
-                    <p>🎯 <strong>¡TRATAMIENTO COMPLETADO!</strong></p>
-                </div>
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⬅️ PASO 5", use_container_width=True):
+                st.session_state.paso_cicladora = 5
+                st.rerun()
+        with col2:
+            if st.button("✅ PASO 7", use_container_width=True):
+                st.session_state.paso_cicladora = 7
+                st.rerun()
+    
+    # ============================================================
+    # PASO 7
+    # ============================================================
+    elif st.session_state.paso_cicladora == 7:
+        st.markdown("""
+        <div class="paso-card">
+            <div class="paso-titulo">
+                <span class="numero-paso">7</span> 🌙 INICIO DEL TRATAMIENTO
             </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("⬅️ PASO 8", use_container_width=True):
-                    st.session_state.paso_cicladora = 8
-                    st.rerun()
-            with col2:
-                if st.button("🏁 FINALIZAR GUÍA", use_container_width=True):
-                    st.session_state.paso_cicladora = 1
-                    st.session_state.pagina = "principal"
-                    st.rerun()
+            <div class="paso-contenido">
+                <p>🔍 La máquina mostrará <strong>"Verificar drenaje inicial"</strong>.</p>
+                <p>⏳ Verás el primer drenaje (sale líquido del abdomen).</p>
+                <p>🔄 Luego comenzarán los ciclos automáticos:</p>
+                <p style="margin-left: 20px;">💧 INFUSIÓN → ⏱️ PERMANENCIA → 🚰 DRENAJE</p>
+                <p>😴 <strong>Puedes dormir tranquilo.</strong> La máquina trabajará sola.</p>
+                <p>⏰ El proceso tomará varias horas.</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.components.v1.html("""
+        <button class="voz-btn" style="margin: 10px 0;" onclick="hablar(`Paso 7: Inicio del tratamiento. La máquina mostrará Verificar drenaje inicial. Verás el primer drenaje donde sale líquido del abdomen. Luego comenzarán los ciclos automáticos de infusión, permanencia y drenaje. Puedes dormir tranquilo, la máquina trabajará sola durante varias horas.`)">
+            🎧 ESCUCHAR PASO 7
+        </button>
+        """, height=50)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⬅️ PASO 6", use_container_width=True):
+                st.session_state.paso_cicladora = 6
+                st.rerun()
+        with col2:
+            if st.button("✅ PASO 8", use_container_width=True):
+                st.session_state.paso_cicladora = 8
+                st.rerun()
+    
+    # ============================================================
+    # PASO 8
+    # ============================================================
+    elif st.session_state.paso_cicladora == 8:
+        st.markdown("""
+        <div class="paso-card">
+            <div class="paso-titulo">
+                <span class="numero-paso">8</span> 🌅 AL DESPERTAR
+            </div>
+            <div class="paso-contenido">
+                <p>🔔 La máquina mostrará <strong>"FIN DE TRATAMIENTO"</strong>.</p>
+                <p>⬇️ Presiona flecha hacia abajo hasta ver <strong>"DRENAJE MANUAL"</strong>.</p>
+                <p>⬅️ Confirma con la flecha izquierda.</p>
+                <p>⏳ Espera a que termine el drenaje.</p>
+                <p>✅ Presiona botón verde <strong>"CONTINUAR"</strong>.</p>
+                <p>🔒 La máquina dirá <strong>"CIERRE CLAMP (TODOS)"</strong>.</p>
+                <p>🔒 Cierra clamp de línea y catéter.</p>
+                <p>✅ Presiona verde nuevamente.</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.components.v1.html("""
+        <button class="voz-btn" style="margin: 10px 0;" onclick="hablar(`Paso 8: Al despertar. La máquina mostrará Fin de tratamiento. Presiona flecha hacia abajo hasta ver Drenaje manual. Confirma con la flecha izquierda. Espera a que termine el drenaje. Presiona botón verde continuar. La máquina dirá Cierre clamp todos. Cierra clamp de línea y catéter. Presiona verde nuevamente.`)">
+            🎧 ESCUCHAR PASO 8
+        </button>
+        """, height=50)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⬅️ PASO 7", use_container_width=True):
+                st.session_state.paso_cicladora = 7
+                st.rerun()
+        with col2:
+            if st.button("✅ PASO 9", use_container_width=True):
+                st.session_state.paso_cicladora = 9
+                st.rerun()
+    
+    # ============================================================
+    # PASO 9
+    # ============================================================
+    elif st.session_state.paso_cicladora == 9:
+        st.markdown("""
+        <div class="paso-card">
+            <div class="paso-titulo">
+                <span class="numero-paso">9</span> 📋 REGISTRO DE DATOS
+            </div>
+            <div class="paso-contenido">
+                <p>🫱 La máquina dirá <strong>"DESCONECTESE"</strong>.</p>
+                <p>🧴 Limpia y aplica alcohol según indicación.</p>
+                <p>✅ Presiona verde para continuar.</p>
+                <p>📤 La máquina dirá <strong>"DESCONECTEME"</strong>.</p>
+                <p style="background: #fdf2f8; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                    <strong>📝 AHORA ANOTA ESTOS VALORES:</strong><br>
+                    • 📊 Drenaje inicial: ______ ml<br>
+                    • 💧 Ultrafiltración total: ______ ml<br>
+                    • ⏱️ Tiempo medio de permanencia: ______ min<br>
+                    • ⌛ Tiempo perdido: ______ min
+                </p>
+                <p>🔌 Apaga el equipo con el botón posterior.</p>
+                <p>🎯 <strong>¡TRATAMIENTO COMPLETADO!</strong></p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.components.v1.html("""
+        <button class="voz-btn" style="margin: 10px 0;" onclick="hablar(`Paso 9: Registro de datos. La máquina dirá Desconéctese. Limpia y aplica alcohol según indicación. Presiona verde para continuar. La máquina dirá Desconécteme. Ahora anota estos valores: Drenaje inicial, Ultrafiltración total, Tiempo medio de permanencia y Tiempo perdido. Apaga el equipo con el botón posterior. Tratamiento completado.`)">
+            🎧 ESCUCHAR PASO 9
+        </button>
+        """, height=50)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⬅️ PASO 8", use_container_width=True):
+                st.session_state.paso_cicladora = 8
+                st.rerun()
+        with col2:
+            if st.button("🏁 FINALIZAR", use_container_width=True):
+                if 'vozHabilitada' in st.session_state and st.session_state.vozHabilitada:
+                    st.components.v1.html("<script>hablar('Gracias por usar la guía. Buen tratamiento.');</script>", height=0)
+                st.session_state.paso_cicladora = 1
+                st.session_state.pagina = "principal"
+                st.rerun()
     
     st.markdown("---")
     if st.button("❌ Cerrar guía", use_container_width=True):
         st.session_state.paso_cicladora = 1
         st.session_state.pagina = "principal"
         st.rerun()
-
 
 # Página: Informe PDF
 if st.session_state.pagina == "informe":
@@ -1263,14 +1794,35 @@ if st.session_state.pagina == "modificar":
                     format="DD/MM/YYYY"
                 )
             with col2:
-                hora_inicio = st.time_input(
-                    "Hora inicio",
-                    datetime.strptime(registro['hora_inicio'], '%H:%M:%S').time()
-                )
-                hora_fin = st.time_input(
-                    "Hora fin",
-                    datetime.strptime(registro['hora_fin'], '%H:%M:%S').time()
-                )
+                # Hora inicio con dígitos
+                st.markdown("**Hora inicio**")
+                col_i1, col_i2, col_i3, col_i4, col_i5 = st.columns([1, 1, 0.5, 1, 1])
+                with col_i1:
+                    inicio_h = st.number_input("Hora", min_value=0, max_value=23, value=datetime.now(BAIRES_TZ).hour, step=1, format="%02d", key="inicio_h")
+                with col_i2:
+                    st.markdown("<h3 style='text-align: center; margin-top: 25px;'>:</h3>", unsafe_allow_html=True)
+                with col_i3:
+                    pass
+                with col_i4:
+                    inicio_m = st.number_input("Min", min_value=0, max_value=59, value=datetime.now(BAIRES_TZ).minute, step=1, format="%02d", key="inicio_m")
+                with col_i5:
+                    st.markdown("")
+                hora_inicio = f"{inicio_h:02d}:{inicio_m:02d}:00"
+                
+                # Hora fin con dígitos
+                st.markdown("**Hora fin**")
+                col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns([1, 1, 0.5, 1, 1])
+                with col_f1:
+                    fin_h = st.number_input("Hora", min_value=0, max_value=23, value=(datetime.now(BAIRES_TZ) + timedelta(hours=8)).hour % 24, step=1, format="%02d", key="fin_h")
+                with col_f2:
+                    st.markdown("<h3 style='text-align: center; margin-top: 25px;'>:</h3>", unsafe_allow_html=True)
+                with col_f3:
+                    pass
+                with col_f4:
+                    fin_m = st.number_input("Min", min_value=0, max_value=59, value=datetime.now(BAIRES_TZ).minute, step=1, format="%02d", key="fin_m")
+                with col_f5:
+                    st.markdown("")
+                hora_fin = f"{fin_h:02d}:{fin_m:02d}:00"
             
             st.markdown("#### 🧴 BOLSAS UTILIZADAS")
             col1, col2 = st.columns(2)

@@ -32,13 +32,17 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS personalizados
-# Estilos CSS personalizados - MÁS CLARO Y LEGIBLE
+# ============================================================
+# ESTILOS CSS PERSONALIZADOS - VERSIÓN OPTIMIZADA
+# ============================================================
 st.markdown("""
 <style>
+    /* Fondo general */
     .stApp {
         background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
     }
+    
+    /* Encabezado principal */
     .main-header {
         background: rgba(255, 255, 255, 0.98);
         padding: 2rem;
@@ -51,19 +55,38 @@ st.markdown("""
     .main-header h1 {
         color: #831843;
         font-size: 2.2rem !important;
+        font-weight: 800 !important;
     }
     .main-header h2 {
         color: #9d174d;
         font-size: 1.6rem !important;
+        font-weight: 600 !important;
     }
-    .paciente-card {
+    
+    /* Tarjetas de paciente (métricas grandes) */
+    .metrica-container {
         background: white;
         padding: 1.5rem;
         border-radius: 15px;
+        text-align: center;
+        border: 2px solid #f9a8d4;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         margin-bottom: 1rem;
-        border: 1px solid #fbcfe8;
     }
+    .metrica-label {
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
+        color: #4a5568;
+        margin-bottom: 0.2rem;
+    }
+    .metrica-grande {
+        font-size: 2.2rem !important;
+        font-weight: 800 !important;
+        color: #831843;
+        line-height: 1.2;
+    }
+    
+    /* Botones del menú principal */
     .boton-menu {
         background: white;
         padding: 1.5rem;
@@ -84,6 +107,8 @@ st.markdown("""
         background: #fdf2f8;
         border-color: #f472b6;
     }
+    
+    /* Tarjeta de último registro */
     .ultimo-registro {
         background: #fdf2f8;
         padding: 1.2rem;
@@ -92,6 +117,8 @@ st.markdown("""
         margin: 1rem 0;
         font-size: 1.1rem !important;
     }
+    
+    /* Footer */
     .footer {
         text-align: center;
         color: #831843;
@@ -99,33 +126,34 @@ st.markdown("""
         opacity: 0.9;
         font-size: 1rem !important;
     }
-    /* Aumentar tamaño de fuente general */
-    .stMarkdown, .stText, p, li, .stMetric label, .stMetric div {
+    
+    /* Aumentar tamaño de fuente general en todos los elementos */
+    .stMarkdown, .stText, p, li, label, span, div:not(.metrica-grande) {
         font-size: 1.1rem !important;
     }
-    .stMetric .metric-value {
-        font-size: 1.8rem !important;
-    }
+    
+    /* Botones de Streamlit */
     .stButton button {
         font-size: 1.1rem !important;
         padding: 0.75rem 1rem !important;
+        font-weight: 500 !important;
     }
-    .stSelectbox div[data-baseweb="select"] span {
-        font-size: 1.1rem !important;
-    }
-    .stNumberInput input {
-        font-size: 1.1rem !important;
-    }
-    .stDateInput input {
-        font-size: 1.1rem !important;
-    }
-    .stTimeInput input {
-        font-size: 1.1rem !important;
-    }
+    
+    /* Inputs y selectores */
+    .stSelectbox div[data-baseweb="select"] span,
+    .stNumberInput input,
+    .stDateInput input,
+    .stTimeInput input,
     .stTextArea textarea {
         font-size: 1.1rem !important;
     }
-    /* Tarjetas de métricas */
+    
+    /* Radio buttons y checkboxes */
+    .stRadio label, .stCheckbox label {
+        font-size: 1.1rem !important;
+    }
+    
+    /* Métricas nativas de Streamlit (por si acaso) */
     div[data-testid="metric-container"] {
         background: white;
         padding: 1rem;
@@ -133,145 +161,44 @@ st.markdown("""
         border: 1px solid #fbcfe8;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
+    div[data-testid="metric-container"] label {
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+    }
+    div[data-testid="metric-container"] div {
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Formularios */
+    .stForm {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        border: 1px solid #fbcfe8;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    
+    /* Mensajes de éxito/error */
+    .stAlert {
+        font-size: 1.1rem !important;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] button {
+        font-size: 1.1rem !important;
+    }
+    
+    /* DataFrames */
+    .stDataFrame {
+        font-size: 1rem !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-
 # ============================================================
-# FUNCIÓN PARA TEXTO A VOZ (SIN API KEY)
+# ELIMINADA LA SECCIÓN DE VOZ - Ya no está en la barra lateral
 # ============================================================
-st.markdown("""
-<script>
-let vozHabilitada = false;
-let vozFemenina = true;
-
-function hablar(texto) {
-    if (!vozHabilitada) return;
-    
-    // Cancelar cualquier síntesis en curso
-    window.speechSynthesis.cancel();
-    
-    // Crear nuevo mensaje
-    const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = 'es-ES';
-    utterance.rate = 0.9;  // Velocidad
-    utterance.pitch = 1;    // Tono
-    utterance.volume = 1;   // Volumen
-    
-    // Seleccionar voz (femenina o masculina)
-    const voces = window.speechSynthesis.getVoices();
-    if (voces.length > 0) {
-        if (vozFemenina) {
-            // Buscar voz femenina en español
-            const vozFem = voces.find(v => v.lang.includes('es') && v.name.includes('Female'));
-            if (vozFem) utterance.voice = vozFem;
-        } else {
-            // Buscar voz masculina en español
-            const vozMasc = voces.find(v => v.lang.includes('es') && v.name.includes('Male'));
-            if (vozMasc) utterance.voice = vozMasc;
-        }
-    }
-    
-    window.speechSynthesis.speak(utterance);
-}
-
-function toggleVoz() {
-    vozHabilitada = !vozHabilitada;
-    const btn = document.getElementById('btn-voz');
-    if (vozHabilitada) {
-        btn.innerHTML = '🔊 VOZ ACTIVADA';
-        btn.style.backgroundColor = '#ec4899';
-        btn.style.color = 'white';
-        hablar('Guía de voz activada');
-    } else {
-        btn.innerHTML = '🔇 ACTIVAR VOZ';
-        btn.style.backgroundColor = '#f9a8d4';
-        btn.style.color = '#831843';
-        window.speechSynthesis.cancel();
-    }
-}
-
-function cambiarVoz(tipo) {
-    vozFemenina = (tipo === 'femenina');
-    const btn = document.getElementById('btn-voz-fem');
-    const btnMasc = document.getElementById('btn-voz-masc');
-    if (tipo === 'femenina') {
-        btn.style.backgroundColor = '#ec4899';
-        btn.style.color = 'white';
-        btnMasc.style.backgroundColor = '#f9a8d4';
-        btnMasc.style.color = '#831843';
-    } else {
-        btnMasc.style.backgroundColor = '#ec4899';
-        btnMasc.style.color = 'white';
-        btn.style.backgroundColor = '#f9a8d4';
-        btn.style.color = '#831843';
-    }
-    if (vozHabilitada) {
-        hablar('Voz cambiada a ' + tipo);
-    }
-}
-</script>
-
-<style>
-.voz-control {
-    background: white;
-    padding: 15px;
-    border-radius: 15px;
-    margin: 10px 0;
-    border: 2px solid #f9a8d4;
-    text-align: center;
-}
-.voz-btn {
-    background: #f9a8d4;
-    color: #831843;
-    border: none;
-    border-radius: 50px;
-    padding: 10px 20px;
-    margin: 5px;
-    font-size: 1.1rem !important;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-.voz-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(236, 72, 153, 0.3);
-}
-.voz-btn-activo {
-    background: #ec4899;
-    color: white;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Controles de voz en la barra lateral
-with st.sidebar:
-    st.markdown("### 🎤 Control de Voz")
-    
-    # Botón principal de voz
-    st.components.v1.html("""
-    <button id="btn-voz" class="voz-btn" style="width:100%;" onclick="toggleVoz()">
-        🔊 ACTIVAR VOZ
-    </button>
-    """, height=50)
-    
-    # Selector de tipo de voz
-    col_v1, col_v2 = st.columns(2)
-    with col_v1:
-        st.components.v1.html("""
-        <button id="btn-voz-fem" class="voz-btn" style="width:100%; background:#ec4899; color:white;" onclick="cambiarVoz('femenina')">
-            👩 Femenina
-        </button>
-        """, height=50)
-    with col_v2:
-        st.components.v1.html("""
-        <button id="btn-voz-masc" class="voz-btn" style="width:100%;" onclick="cambiarVoz('masculina')">
-            👨 Masculina
-        </button>
-        """, height=50)
-    
-    st.markdown("---")
-
 
 # Inicializar conexión a base de datos
 @st.cache_resource
@@ -353,19 +280,44 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Tarjeta del paciente
+# ============================================================
+# TARJETA DEL PACIENTE CON MÉTRICAS GRANDES
+# ============================================================
 col1, col2, col3, col4 = st.columns(4)
+
 with col1:
-    st.metric("Edad", f"{config['edad']} años")
+    st.markdown(f"""
+    <div class="metrica-container">
+        <div class="metrica-label">📅 Edad</div>
+        <div class="metrica-grande">{config['edad']}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 with col2:
-    st.metric("Peso", f"{config['peso_kg']} kg")
+    st.markdown(f"""
+    <div class="metrica-container">
+        <div class="metrica-label">⚖️ Peso</div>
+        <div class="metrica-grande">{config['peso_kg']} kg</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 with col3:
-    st.metric("Altura", f"{config['altura_m']} m")
+    st.markdown(f"""
+    <div class="metrica-container">
+        <div class="metrica-label">📏 Altura</div>
+        <div class="metrica-grande">{config['altura_m']} m</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 with col4:
-    st.metric("DNI", config['dni'])
+    st.markdown(f"""
+    <div class="metrica-container">
+        <div class="metrica-label">🆔 DNI</div>
+        <div class="metrica-grande">{config['dni']}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
-
 # ============================================================
 # MENÚ PRINCIPAL
 # ============================================================
@@ -648,6 +600,19 @@ if st.session_state.pagina == "nuevo":
     tipo = st.radio("Seleccionar tipo:", ["Manual", "Cicladora"], horizontal=True)
     
     if tipo == "Manual":
+        # Inicializar unidad_manual si no existe
+        if "unidad_manual" not in st.session_state:
+            st.session_state.unidad_manual = "Kilogramos (kg)"
+        
+        # Selector de unidad (fuera del form pero actualizando session_state)
+        unidad = st.radio(
+            "Unidad de peso:",
+            ["Kilogramos (kg)", "Gramos (g)"],
+            horizontal=True,
+            key="unidad_manual_selector"
+        )
+        st.session_state.unidad_manual = unidad
+        
         with st.form("form_manual"):
             st.markdown("### 🖐️ Diálisis Manual")
             
@@ -655,22 +620,17 @@ if st.session_state.pagina == "nuevo":
             with col1:
                 fecha = st.date_input("Fecha", datetime.now(BAIRES_TZ), format="DD/MM/YYYY")
             with col2:
-                # Selector de hora tipo ruleta (nativo del celular)
                 hora_time = st.time_input("Hora", datetime.now(BAIRES_TZ).time(), step=60)
-                # Convertir a string para guardar
                 hora_str = hora_time.strftime("%H:%M:%S")
             
             concentracion = st.selectbox("Concentración (Color)", ["Amarillo", "Verde", "Rojo"])
-            
-            # Selector de unidad de peso (fuera del form para que actualice inmediatamente)
-            st.markdown("---")
             
             # Variable para almacenar valores en kg
             peso_llena_kg = 0
             peso_vacia_kg = 0
             peso_drenaje_kg = 0
             
-            # Mostrar campos según unidad seleccionada
+            # Mostrar campos según unidad seleccionada (usando session_state)
             if st.session_state.unidad_manual == "Kilogramos (kg)":
                 st.markdown("#### ⚖️ Pesos (en kilogramos)")
                 col1, col2, col3 = st.columns(3)
@@ -718,7 +678,7 @@ if st.session_state.pagina == "nuevo":
             if st.form_submit_button("💾 Guardar Registro Manual", use_container_width=True):
                 datos = {
                     'fecha': fecha.strftime("%Y-%m-%d"),
-                    'hora': hora_str,  # Usar hora_str en lugar de hora
+                    'hora': hora_str,
                     'concentracion': concentracion,
                     'peso_llena': peso_llena_kg,
                     'peso_vacia': peso_vacia_kg,
@@ -1572,140 +1532,135 @@ if st.session_state.pagina == "modificar":
             if "unidad_mod_manual" not in st.session_state:
                 st.session_state.unidad_mod_manual = "Kilogramos (kg)"
             
-            # Mostrar valores actuales
             st.markdown(f"### ✏️ Editando Registro Manual ID: {registro_id}")
             
-            col1, col2 = st.columns(2)
-            with col1:
-                nueva_fecha = st.date_input(
-                    "Fecha", 
-                    datetime.strptime(registro['fecha'], '%Y-%m-%d').date(),
-                    format="DD/MM/YYYY"
-                )
-            with col2:
-                # En Modificar Manual, reemplazar el selector de hora:
-                nueva_hora_time = st.time_input(
-                    "Hora",
-                    datetime.strptime(registro['hora'], '%H:%M:%S').time(),
-                    step=60
-                )
-                nueva_hora_str = nueva_hora_time.strftime("%H:%M:%S")
-
-            nueva_concentracion = st.selectbox(
-                "Concentración (Color)",
-                ["Amarillo", "Verde", "Rojo"],
-                index=["Amarillo", "Verde", "Rojo"].index(registro['concentracion'])
-            )
-            
-            # Selector de unidad de peso (AL MISMO NIVEL que selectbox)
-            st.session_state.unidad_mod_manual = st.radio(
-                "Unidad de peso:",
-                ["Kilogramos (kg)", "Gramos (g)"],
-                horizontal=True,
-                key="unidad_selector_mod"
-            )
-            
-            # Valores actuales (AL MISMO NIVEL)
-            peso_llena_actual = float(registro['peso_bolsa_llena_kg'])
-            peso_vacia_actual = float(registro['peso_bolsa_vacia_kg'] or 0)
-            peso_drenaje_actual = float(registro['peso_bolsa_drenaje_kg'])
-            
-            # Variables para almacenar valores modificados
-            peso_llena_kg = peso_llena_actual
-            peso_vacia_kg = peso_vacia_actual
-            peso_drenaje_kg = peso_drenaje_actual
-            
-            # Mostrar campos según unidad
-            if st.session_state.unidad_mod_manual == "Kilogramos (kg)":
-                st.markdown("#### ⚖️ Pesos (en kilogramos)")
-                col1, col2, col3 = st.columns(3)
+            with st.form("form_modificar_manual"):
+                col1, col2 = st.columns(2)
                 with col1:
-                    peso_llena = st.number_input(
-                        "Peso bolsa llena (infusión)",
-                        min_value=0.0, step=0.1, format="%.3f",
-                        value=peso_llena_actual,
-                        key="mod_peso_llena_kg"
+                    nueva_fecha = st.date_input(
+                        "Fecha", 
+                        datetime.strptime(registro['fecha'], '%Y-%m-%d').date(),
+                        format="DD/MM/YYYY"
                     )
-                    peso_llena_kg = peso_llena
-                    st.caption(f"Actual: {peso_llena_actual:.3f} kg")
                 with col2:
-                    peso_vacia = st.number_input(
-                        "Peso bolsa vacía (opcional)",
-                        min_value=0.0, step=0.1, format="%.3f",
-                        value=peso_vacia_actual,
-                        key="mod_peso_vacia_kg"
+                    nueva_hora_time = st.time_input(
+                        "Hora",
+                        datetime.strptime(registro['hora'], '%H:%M:%S').time(),
+                        step=60
                     )
-                    peso_vacia_kg = peso_vacia
-                    st.caption(f"Actual: {peso_vacia_actual:.3f} kg")
-                with col3:
-                    peso_drenaje = st.number_input(
-                        "Peso bolsa drenaje",
-                        min_value=0.0, step=0.1, format="%.3f",
-                        value=peso_drenaje_actual,
-                        key="mod_peso_drenaje_kg"
-                    )
-                    peso_drenaje_kg = peso_drenaje
-                    st.caption(f"Actual: {peso_drenaje_actual:.3f} kg")
-            else:  # Gramos
-                st.markdown("#### ⚖️ Pesos (en gramos)")
-                col1, col2, col3 = st.columns(3)
+                
+                nueva_concentracion = st.selectbox(
+                    "Concentración (Color)",
+                    ["Amarillo", "Verde", "Rojo"],
+                    index=["Amarillo", "Verde", "Rojo"].index(registro['concentracion'])
+                )
+                
+                # Selector de unidad de peso
+                st.session_state.unidad_mod_manual = st.radio(
+                    "Unidad de peso:",
+                    ["Kilogramos (kg)", "Gramos (g)"],
+                    horizontal=True
+                )
+                
+                # Valores actuales
+                peso_llena_actual = float(registro['peso_bolsa_llena_kg'])
+                peso_vacia_actual = float(registro['peso_bolsa_vacia_kg'] or 0)
+                peso_drenaje_actual = float(registro['peso_bolsa_drenaje_kg'])
+                
+                # Variables para almacenar valores modificados
+                peso_llena_kg = peso_llena_actual
+                peso_vacia_kg = peso_vacia_actual
+                peso_drenaje_kg = peso_drenaje_actual
+                
+                # Mostrar campos según unidad
+                if st.session_state.unidad_mod_manual == "Kilogramos (kg)":
+                    st.markdown("#### ⚖️ Pesos (en kilogramos)")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        peso_llena = st.number_input(
+                            "Peso bolsa llena (infusión)",
+                            min_value=0.0, step=0.1, format="%.3f",
+                            value=peso_llena_actual,
+                            key="mod_peso_llena_kg"
+                        )
+                        peso_llena_kg = peso_llena
+                        st.caption(f"Actual: {peso_llena_actual:.3f} kg")
+                    with col2:
+                        peso_vacia = st.number_input(
+                            "Peso bolsa vacía (opcional)",
+                            min_value=0.0, step=0.1, format="%.3f",
+                            value=peso_vacia_actual,
+                            key="mod_peso_vacia_kg"
+                        )
+                        peso_vacia_kg = peso_vacia
+                        st.caption(f"Actual: {peso_vacia_actual:.3f} kg")
+                    with col3:
+                        peso_drenaje = st.number_input(
+                            "Peso bolsa drenaje",
+                            min_value=0.0, step=0.1, format="%.3f",
+                            value=peso_drenaje_actual,
+                            key="mod_peso_drenaje_kg"
+                        )
+                        peso_drenaje_kg = peso_drenaje
+                        st.caption(f"Actual: {peso_drenaje_actual:.3f} kg")
+                else:  # Gramos
+                    st.markdown("#### ⚖️ Pesos (en gramos)")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        peso_llena_g = st.number_input(
+                            "Peso bolsa llena (infusión) (g)",
+                            min_value=0, step=10, format="%d",
+                            value=int(peso_llena_actual * 1000),
+                            key="mod_peso_llena_g"
+                        )
+                        peso_llena_kg = peso_llena_g / 1000
+                        st.caption(f"Actual: {int(peso_llena_actual * 1000)} g = {peso_llena_actual:.3f} kg")
+                    with col2:
+                        peso_vacia_g = st.number_input(
+                            "Peso bolsa vacía (opcional) (g)",
+                            min_value=0, step=10, format="%d",
+                            value=int(peso_vacia_actual * 1000),
+                            key="mod_peso_vacia_g"
+                        )
+                        peso_vacia_kg = peso_vacia_g / 1000
+                        st.caption(f"Actual: {int(peso_vacia_actual * 1000)} g = {peso_vacia_actual:.3f} kg")
+                    with col3:
+                        peso_drenaje_g = st.number_input(
+                            "Peso bolsa drenaje (g)",
+                            min_value=0, step=10, format="%d",
+                            value=int(peso_drenaje_actual * 1000),
+                            key="mod_peso_drenaje_g"
+                        )
+                        peso_drenaje_kg = peso_drenaje_g / 1000
+                        st.caption(f"Actual: {int(peso_drenaje_actual * 1000)} g = {peso_drenaje_actual:.3f} kg")
+                
+                # Mostrar volúmenes calculados
+                vol_infundido = (peso_llena_kg - peso_vacia_kg) * 1000
+                vol_drenado = peso_drenaje_kg * 1000
+                
+                col1, col2 = st.columns(2)
                 with col1:
-                    peso_llena_g = st.number_input(
-                        "Peso bolsa llena (infusión) (g)",
-                        min_value=0, step=10, format="%d",
-                        value=int(peso_llena_actual * 1000),
-                        key="mod_peso_llena_g"
+                    delta_inf = vol_infundido - (registro.get('volumen_infundido_ml', 0) or 0)
+                    st.metric(
+                        "Volumen infundido",
+                        f"{vol_infundido:.0f} ml",
+                        delta=f"{delta_inf:.0f}"
                     )
-                    peso_llena_kg = peso_llena_g / 1000
-                    st.caption(f"Actual: {int(peso_llena_actual * 1000)} g = {peso_llena_actual:.3f} kg")
                 with col2:
-                    peso_vacia_g = st.number_input(
-                        "Peso bolsa vacía (opcional) (g)",
-                        min_value=0, step=10, format="%d",
-                        value=int(peso_vacia_actual * 1000),
-                        key="mod_peso_vacia_g"
+                    delta_dren = vol_drenado - (registro.get('volumen_drenado_ml', 0) or 0)
+                    st.metric(
+                        "Volumen drenado",
+                        f"{vol_drenado:.0f} ml",
+                        delta=f"{delta_dren:.0f}"
                     )
-                    peso_vacia_kg = peso_vacia_g / 1000
-                    st.caption(f"Actual: {int(peso_vacia_actual * 1000)} g = {peso_vacia_actual:.3f} kg")
-                with col3:
-                    peso_drenaje_g = st.number_input(
-                        "Peso bolsa drenaje (g)",
-                        min_value=0, step=10, format="%d",
-                        value=int(peso_drenaje_actual * 1000),
-                        key="mod_peso_drenaje_g"
-                    )
-                    peso_drenaje_kg = peso_drenaje_g / 1000
-                    st.caption(f"Actual: {int(peso_drenaje_actual * 1000)} g = {peso_drenaje_actual:.3f} kg")
-            
-            # Mostrar volúmenes calculados (se actualizan en tiempo real)
-            vol_infundido = (peso_llena_kg - peso_vacia_kg) * 1000
-            vol_drenado = peso_drenaje_kg * 1000
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                delta_inf = vol_infundido - (registro.get('volumen_infundido_ml', 0) or 0)
-                st.metric(
-                    "Volumen infundido",
-                    f"{vol_infundido:.0f} ml",
-                    delta=f"{delta_inf:.0f}"
+                
+                observaciones = st.text_area(
+                    "📝 Observaciones",
+                    value=registro.get('observaciones', '')
                 )
-            with col2:
-                delta_dren = vol_drenado - (registro.get('volumen_drenado_ml', 0) or 0)
-                st.metric(
-                    "Volumen drenado",
-                    f"{vol_drenado:.0f} ml",
-                    delta=f"{delta_dren:.0f}"
-                )
-            
-            observaciones = st.text_area(
-                "📝 Observaciones",
-                value=registro.get('observaciones', '')
-            )
-            
-            # Botones de acción
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
+                
+                # Botón submit del form
+                if st.form_submit_button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
                     # Obtener último registro manual para recalcular balance
                     ultimo = db.get_ultimo_registro_manual()
                     
@@ -1715,9 +1670,11 @@ if st.session_state.pagina == "modificar":
                     else:
                         balance = (peso_drenaje_kg * 1000) - (peso_llena_kg - peso_vacia_kg) * 1000
                     
+                    nueva_hora_str = nueva_hora_time.strftime("%H:%M:%S")
+                    
                     datos_actualizados = {
                         'fecha': nueva_fecha.strftime("%Y-%m-%d"),
-                        'hora': nueva_hora.strftime("%H:%M:%S"),
+                        'hora': nueva_hora_str,
                         'concentracion': nueva_concentracion,
                         'peso_bolsa_llena_kg': peso_llena_kg,
                         'peso_bolsa_vacia_kg': peso_vacia_kg,
@@ -1725,8 +1682,6 @@ if st.session_state.pagina == "modificar":
                         'balance_ml': balance,
                         'observaciones': observaciones
                     }
-                    
-                    print(f"Enviando datos para actualizar: {datos_actualizados}")  # Para debug
                     
                     try:
                         resultado = db.update_registro_manual(registro_id, datos_actualizados)
@@ -1737,14 +1692,9 @@ if st.session_state.pagina == "modificar":
                             st.session_state.pagina = "principal"
                             st.rerun()
                         else:
-                            st.error("No se pudo actualizar el registro - Verifica que el ID existe")
+                            st.error("No se pudo actualizar el registro")
                     except Exception as e:
                         st.error(f"Error: {e}")
-            
-            with col2:
-                if st.button("Cancelar", use_container_width=True):
-                    st.session_state.modificar_paso = "seleccionar"
-                    st.rerun()
         
         else:  # Cicladora
             # Obtener datos del registro de cicladora
@@ -1756,86 +1706,85 @@ if st.session_state.pagina == "modificar":
             
             st.markdown(f"### ✏️ Editando Registro Cicladora ID: {registro_id}")
             
-            col1, col2 = st.columns(2)
-            with col1:
-                nueva_fecha = st.date_input(
-                    "Fecha",
-                    datetime.strptime(registro['fecha'], '%Y-%m-%d').date(),
-                    format="DD/MM/YYYY"
+            with st.form("form_modificar_cicladora"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    nueva_fecha = st.date_input(
+                        "Fecha",
+                        datetime.strptime(registro['fecha'], '%Y-%m-%d').date(),
+                        format="DD/MM/YYYY"
+                    )
+                with col2:
+                    hora_inicio_time = st.time_input(
+                        "Hora inicio",
+                        datetime.strptime(registro['hora_inicio'], '%H:%M:%S').time(),
+                        step=60
+                    )
+                    hora_fin_time = st.time_input(
+                        "Hora fin",
+                        datetime.strptime(registro['hora_fin'], '%H:%M:%S').time(),
+                        step=60
+                    )
+                
+                st.markdown("#### 🧴 BOLSAS UTILIZADAS")
+                col1, col2 = st.columns(2)
+                with col1:
+                    conc1 = st.selectbox(
+                        "Color Bolsa 1",
+                        ["Amarillo", "Verde", "Rojo"],
+                        index=["Amarillo", "Verde", "Rojo"].index(registro.get('concentracion_bolsa1', 'Amarillo'))
+                    )
+                with col2:
+                    conc2 = st.selectbox(
+                        "Color Bolsa 2",
+                        ["Amarillo", "Verde", "Rojo"],
+                        index=["Amarillo", "Verde", "Rojo"].index(registro.get('concentracion_bolsa2', 'Amarillo'))
+                    )
+                
+                st.markdown("#### 📊 DATOS DE LA MÁQUINA")
+                col1, col2 = st.columns(2)
+                with col1:
+                    drenaje_inicial = st.number_input(
+                        "Drenaje inicial (ml)",
+                        min_value=0, step=50,
+                        value=registro.get('vol_drenaje_inicial_ml', 0)
+                    )
+                    uf_total = st.number_input(
+                        "UF Total (ml)",
+                        min_value=0, step=50,
+                        value=registro.get('uf_total_cicladora_ml', 0)
+                    )
+                    tiempo_permanencia = st.number_input(
+                        "Tiempo permanencia promedio (min)",
+                        min_value=0, step=5,
+                        value=registro.get('tiempo_permanencia_promedio_min', 0)
+                    )
+                with col2:
+                    tiempo_perdido = st.number_input(
+                        "Tiempo perdido (min)",
+                        min_value=0, step=5,
+                        value=registro.get('tiempo_perdido_min', 0)
+                    )
+                    num_ciclos = st.number_input(
+                        "Número de ciclos",
+                        min_value=1, step=1,
+                        value=registro.get('numero_ciclos_completados', 4)
+                    )
+                
+                observaciones = st.text_area(
+                    "📝 Observaciones",
+                    value=registro.get('observaciones', '')
                 )
-            with col2:
-                # En Modificar Cicladora
-                hora_inicio_time = st.time_input(
-                    "Hora inicio",
-                    datetime.strptime(registro['hora_inicio'], '%H:%M:%S').time(),
-                    step=60
-                )
-                hora_fin_time = st.time_input(
-                    "Hora fin",
-                    datetime.strptime(registro['hora_fin'], '%H:%M:%S').time(),
-                    step=60
-                )
-                hora_inicio_str = hora_inicio_time.strftime("%H:%M:%S")
-                hora_fin_str = hora_fin_time.strftime("%H:%M:%S")
-            
-            st.markdown("#### 🧴 BOLSAS UTILIZADAS")
-            col1, col2 = st.columns(2)
-            with col1:
-                conc1 = st.selectbox(
-                    "Color Bolsa 1",
-                    ["Amarillo", "Verde", "Rojo"],
-                    index=["Amarillo", "Verde", "Rojo"].index(registro.get('concentracion_bolsa1', 'Amarillo'))
-                )
-            with col2:
-                conc2 = st.selectbox(
-                    "Color Bolsa 2",
-                    ["Amarillo", "Verde", "Rojo"],
-                    index=["Amarillo", "Verde", "Rojo"].index(registro.get('concentracion_bolsa2', 'Amarillo'))
-                )
-            
-            st.markdown("#### 📊 DATOS DE LA MÁQUINA")
-            col1, col2 = st.columns(2)
-            with col1:
-                drenaje_inicial = st.number_input(
-                    "Drenaje inicial (ml)",
-                    min_value=0, step=50,
-                    value=registro.get('vol_drenaje_inicial_ml', 0)
-                )
-                uf_total = st.number_input(
-                    "UF Total (ml)",
-                    min_value=0, step=50,
-                    value=registro.get('uf_total_cicladora_ml', 0)
-                )
-                tiempo_permanencia = st.number_input(
-                    "Tiempo permanencia promedio (min)",
-                    min_value=0, step=5,
-                    value=registro.get('tiempo_permanencia_promedio_min', 0)
-                )
-            with col2:
-                tiempo_perdido = st.number_input(
-                    "Tiempo perdido (min)",
-                    min_value=0, step=5,
-                    value=registro.get('tiempo_perdido_min', 0)
-                )
-                num_ciclos = st.number_input(
-                    "Número de ciclos",
-                    min_value=1, step=1,
-                    value=registro.get('numero_ciclos_completados', 4)
-                )
-            
-            observaciones = st.text_area(
-                "📝 Observaciones",
-                value=registro.get('observaciones', '')
-            )
-            
-            # Botones de acción
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
+                
+                # Botón submit del form
+                if st.form_submit_button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
+                    hora_inicio_str = hora_inicio_time.strftime("%H:%M:%S")
+                    hora_fin_str = hora_fin_time.strftime("%H:%M:%S")
+                    
                     datos_actualizados = {
                         'fecha': nueva_fecha.strftime("%Y-%m-%d"),
-                        'hora_inicio': hora_inicio.strftime("%H:%M:%S"),
-                        'hora_fin': hora_fin.strftime("%H:%M:%S"),
+                        'hora_inicio': hora_inicio_str,
+                        'hora_fin': hora_fin_str,
                         'vol_drenaje_inicial_ml': drenaje_inicial,
                         'uf_total_cicladora_ml': uf_total,
                         'tiempo_permanencia_promedio_min': tiempo_permanencia,
@@ -1858,18 +1807,10 @@ if st.session_state.pagina == "modificar":
                             st.error("No se pudo actualizar el registro")
                     except Exception as e:
                         st.error(f"Error: {e}")
-            
-            with col2:
-                if st.button("Cancelar", use_container_width=True):
-                    st.session_state.modificar_paso = "seleccionar"
-                    st.rerun()
-    else:
-        st.info("No hay registros para eliminar")
-        if st.button("← Volver al menu"):
-            st.session_state.pagina = "principal"
-            st.rerun()
     
-    if st.button("← Volver al menu"):
+    # Botón para volver al menú (fuera del if)
+    if st.button("← Volver al menú principal", use_container_width=True):
+        st.session_state.modificar_paso = "seleccionar"
         st.session_state.pagina = "principal"
         st.rerun()
 

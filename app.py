@@ -1418,7 +1418,7 @@ if st.session_state.pagina == "informe":
                     fecha_fin.strftime("%Y-%m-%d")
                 )
                 
-                filename = generar_informe_pdf(
+                archivos_generados = generar_informe_pdf(
                     registros_filtrados,
                     estadisticas,
                     fecha_inicio.strftime("%d/%m/%Y"),
@@ -1426,13 +1426,51 @@ if st.session_state.pagina == "informe":
                     tipo_informe
                 )
                 
-                with open(filename, "rb") as f:
-                    pdf_data = f.read()
-                b64_pdf = base64.b64encode(pdf_data).decode()
-                href = f'<a href="data:application/octet-stream;base64,{b64_pdf}" download="{filename}">📥 Descargar PDF</a>'
-                st.markdown(href, unsafe_allow_html=True)
-                st.success("✅ PDF generado")
-                os.remove(filename)
+                if len(archivos_generados) == 1:
+                    # Un solo archivo
+                    filename = archivos_generados[0]
+                    with open(filename, "rb") as f:
+                        pdf_data = f.read()
+                    b64_pdf = base64.b64encode(pdf_data).decode()
+                    href = f'<a href="data:application/octet-stream;base64,{b64_pdf}" download="{filename}">📥 Descargar PDF ({tipo_informe})</a>'
+                    st.markdown(href, unsafe_allow_html=True)
+                    os.remove(filename)
+                else:
+                    # Dos archivos: ofrecer enlaces individuales o un zip
+                    st.markdown("### 📥 Archivos generados:")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        filename1 = archivos_generados[0]
+                        with open(filename1, "rb") as f:
+                            pdf_data = f.read()
+                        b64_pdf1 = base64.b64encode(pdf_data).decode()
+                        href1 = f'<a href="data:application/octet-stream;base64,{b64_pdf1}" download="{filename1}">📄 Descargar Resumen</a>'
+                        st.markdown(href1, unsafe_allow_html=True)
+                    with col2:
+                        filename2 = archivos_generados[1]
+                        with open(filename2, "rb") as f:
+                            pdf_data = f.read()
+                        b64_pdf2 = base64.b64encode(pdf_data).decode()
+                        href2 = f'<a href="data:application/octet-stream;base64,{b64_pdf2}" download="{filename2}">📊 Descargar Base de Datos</a>'
+                        st.markdown(href2, unsafe_allow_html=True)
+                    
+                    # Opcional: zip conjunto
+                    import zipfile
+                    from io import BytesIO
+                    zip_buffer = BytesIO()
+                    with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED) as zip_file:
+                        for fname in archivos_generados:
+                            zip_file.write(fname, arcname=os.path.basename(fname))
+                    zip_data = zip_buffer.getvalue()
+                    b64_zip = base64.b64encode(zip_data).decode()
+                    href_zip = f'<a href="data:application/zip;base64,{b64_zip}" download="informe_completo_{fecha_inicio.strftime("%Y%m%d")}_{fecha_fin.strftime("%Y%m%d")}.zip">📦 Descargar ambos (ZIP)</a>'
+                    st.markdown(href_zip, unsafe_allow_html=True)
+                    
+                    # Limpiar archivos temporales
+                    for fname in archivos_generados:
+                        os.remove(fname)
+                
+                st.success("✅ Informe(s) generado(s)")
     else:
         st.info("No hay datos para generar informe")
     
